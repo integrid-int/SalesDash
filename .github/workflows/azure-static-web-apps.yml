@@ -27,6 +27,7 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "public"
+          api_location: "api"
           output_location: ""
 
   close_pull_request_job:
