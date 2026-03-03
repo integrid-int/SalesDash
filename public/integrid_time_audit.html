@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Integrid — Time Audit & RGA Redesign</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Syne', system-ui, sans-serif;
+    background: linear-gradient(150deg, #F0F6FF 0%, #EEF2FF 50%, #F5F3FF 100%);
+    min-height: 100vh;
+    padding: 24px 20px 52px;
+  }
+  input, textarea, button { font-family: inherit; }
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: auto; opacity: 0.5; }
+  ::placeholder { color: #CBD5E1; }
+  textarea { resize: none; }
+
+  /* ── LAYOUT ── */
+  .app { max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+  /* ── CARDS ── */
+  .card { background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 40px rgba(0,0,0,0.10); border: 1px solid #E2E8F0; }
+  .card-sm { background: white; border-radius: 14px; padding: 16px 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); border: 1px solid #E2E8F0; }
+
+  /* ── PAGE HEADER BAND ── */
+  .page-header { padding: 18px 26px 14px; display: flex; justify-content: space-between; align-items: center; }
+  .page-header .sub { font-size: 11px; font-weight: 700; letter-spacing: 0.11em; text-transform: uppercase; color: rgba(255,255,255,0.55); margin-bottom: 2px; }
+  .page-header .title { font-size: 21px; font-weight: 800; color: white; }
+  .page-body { padding: 18px 22px 22px; }
+
+  /* ── GRID ── */
+  .grid-layout { display: flex; gap: 18px; align-items: flex-start; }
+  .grid-layout .grid-table { flex: 1; min-width: 0; }
+  .grid-layout .grid-chart { width: 186px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px; }
+
+  /* ── SPREADSHEET ── */
+  .spreadsheet { border-radius: 10px; overflow: hidden; border: 1.5px solid #E2E8F0; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .ss-head { display: grid; grid-template-columns: 1.8fr 78px 68px 2.4fr; background: #F8FAFC; border-bottom: 2px solid #E2E8F0; }
+  .ss-head div { padding: 7px 10px; font-size: 10px; font-weight: 700; color: #94A3B8; letter-spacing: 0.08em; }
+  .ss-head div:not(:first-child) { text-align: right; }
+  .ss-head div:last-child { text-align: left; }
+  .ss-row { display: grid; grid-template-columns: 1.8fr 78px 68px 2.4fr; border-bottom: 1px solid #EDF2F7; }
+  .ss-row:last-of-type { border-bottom: none; }
+  .ss-row.rga-row { background: #EFF6FF !important; }
+  .ss-row.even { background: white; }
+  .ss-row.odd { background: #FAFBFC; }
+  .ss-label { display: flex; align-items: center; gap: 8px; padding: 0 10px; }
+  .ss-label .dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+  .ss-label .cat-name { font-size: 12.5px; }
+  .ss-label .rga-badge { font-size: 9px; background: #2563EB; color: white; border-radius: 4px; padding: 1px 5px; font-weight: 700; flex-shrink: 0; }
+  .ss-hours { display: flex; align-items: center; justify-content: flex-end; border-left: 2px solid transparent; transition: all 0.1s; cursor: text; }
+  .ss-hours:focus-within { border-left-color: #2563EB; background: #F0F9FF; }
+  .ss-hours input { width: 100%; text-align: right; border: none; outline: none; font-size: 14px; font-weight: 700; background: transparent; padding: 8px 10px; font-family: inherit; cursor: text; }
+  .ss-pct { display: flex; align-items: center; justify-content: flex-end; padding: 0 10px; font-size: 13px; font-weight: 700; transition: color 0.3s; }
+  .ss-note input { border: none; outline: none; background: transparent; font-size: 12px; color: #64748B; font-family: inherit; padding: 0 10px; width: 100%; height: 100%; }
+  .ss-total { display: grid; grid-template-columns: 1.8fr 78px 68px 2.4fr; background: #EFF6FF; border-top: 2px solid #BFDBFE; }
+  .ss-total > div { padding: 8px 10px; font-size: 13px; font-weight: 800; color: #1E3A5F; }
+  .ss-total .total-hrs { text-align: right; font-size: 14px; transition: color 0.3s; }
+  .ss-total .total-pct { text-align: right; }
+  .ss-total .total-msg { font-size: 12px; font-weight: 600; }
+
+  /* ── GAUGE ── */
+  .gauge-wrap { text-align: center; }
+  .gauge-label { font-size: 11px; font-weight: 700; margin-top: -4px; transition: color 0.3s; }
+
+  /* ── LEGEND ── */
+  .legend { display: flex; flex-direction: column; gap: 5px; }
+  .legend-row { display: flex; align-items: center; gap: 7px; }
+  .legend-dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+  .legend-name { flex: 1; font-size: 11px; color: #64748B; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .legend-h { font-size: 11px; font-weight: 700; min-width: 28px; text-align: right; }
+  .legend-p { font-size: 11px; color: #94A3B8; min-width: 32px; text-align: right; }
+
+  /* ── DELTA BAR ── */
+  .delta-bar { background: linear-gradient(135deg, #1E3A5F, #2563EB); border-radius: 12px; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 6px 24px rgba(37,99,235,0.22); }
+  .delta-bar .label { color: rgba(255,255,255,0.65); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; }
+  .delta-stats { display: flex; gap: 32px; }
+  .delta-stat { text-align: center; }
+  .delta-val { font-size: 19px; font-weight: 800; transition: color 0.3s; }
+  .delta-lbl { font-size: 10px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.07em; }
+
+  /* ── WEEK PICKER ── */
+  .week-picker { display: flex; gap: 16px; align-items: center; justify-content: center; flex-wrap: wrap; }
+  .week-picker label { display: flex; align-items: center; gap: 10px; background: white; border-radius: 10px; padding: 10px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); cursor: pointer; }
+  .week-picker .dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .week-picker .lbl { font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; }
+  .week-picker input[type=date] { border: none; outline: none; font-size: 13px; font-weight: 600; color: #374151; background: transparent; cursor: pointer; min-width: 130px; font-family: inherit; }
+  .week-picker .range { font-size: 11px; color: #94A3B8; white-space: nowrap; }
+
+  /* ── OBS PANEL ── */
+  .obs-panel { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .obs-card { border-radius: 10px; padding: 11px 13px; border: 1.5px solid; }
+  .obs-card .obs-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .obs-card textarea { width: 100%; border: none; background: transparent; font-size: 12px; color: #374151; outline: none; line-height: 1.5; font-family: inherit; }
+
+  /* ── ACTION PLAN ── */
+  .action-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .action-col { border-radius: 12px; border: 1.5px solid; overflow: hidden; }
+  .action-col-head { padding: 9px 13px 7px; font-size: 13px; font-weight: 800; border-bottom: 1px solid; }
+  .action-col-body { padding: 10px 13px; }
+  .action-item { display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start; }
+  .action-dot { width: 6px; height: 6px; border-radius: 2px; flex-shrink: 0; margin-top: 5px; }
+  .action-text { font-size: 12px; color: #374151; line-height: 1.5; }
+  .action-extra { width: 100%; margin-top: 6px; border: 1px dashed; border-radius: 7px; background: rgba(255,255,255,0.7); padding: 6px 9px; font-size: 12px; color: #374151; font-family: inherit; outline: none; line-height: 1.5; }
+
+  /* ── COMMITMENT STRIP ── */
+  .commit-strip { background: white; border-radius: 12px; border: 1.5px solid #A7F3D0; padding: 12px 20px; display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+  .commit-cell { border-radius: 9px; padding: 9px 12px; }
+  .commit-lbl { font-size: 9px; font-weight: 700; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .commit-val { font-size: 13px; font-weight: 800; }
+  .commit-input { border: none; background: transparent; font-size: 13px; font-weight: 600; color: #374151; outline: none; width: 100%; font-family: inherit; }
+
+  /* ── PDF BUTTON ── */
+  .pdf-btn { display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg,#1E3A5F,#2563EB); color: white; border: none; border-radius: 12px; padding: 13px 24px; cursor: pointer; font-size: 14px; font-weight: 800; box-shadow: 0 4px 18px rgba(37,99,235,0.35); transition: transform 0.1s; }
+  .pdf-btn:active { transform: scale(0.97); }
+  .pdf-btn svg { flex-shrink: 0; }
+
+  /* ── SECTION LABEL ── */
+  .section-lbl { font-size: 11px; font-weight: 700; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 12px; }
+
+  /* ── PRINT ── */
+  @media print {
+    @page { size: letter; margin: 0.45in; }
+    body { background: white !important; padding: 0; }
+    .no-print { display: none !important; }
+    .print-only { display: block !important; }
+    .print-page { background: white; page-break-after: always; border: 1px solid #E2E8F0; border-radius: 6px; overflow: hidden; margin-bottom: 0; }
+    .print-page:last-child { page-break-after: avoid; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .print-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px 10px; }
+    .print-body { display: flex; gap: 14px; padding: 12px 16px 8px; }
+    .print-table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+    .print-table th { padding: 5px 8px; color: white; font-weight: 700; font-size: 8pt; letter-spacing: 0.06em; }
+    .print-table td { padding: 5px 8px; font-size: 9pt; }
+    .print-legend-wrap { width: 155px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; }
+  }
+  .print-only { display: none; }
+</style>
+</head>
+<body>
+
+<div class="app no-print" id="app">
+
+  <!-- HEADER -->
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div>
+      <div style="font-size:28px;font-weight:800;color:#1E3A5F;letter-spacing:-0.02em">Time Audit &amp; RGA Redesign</div>
+      <div style="font-size:12px;color:#64748B;margin-top:2px">Click any <b>Hours</b> cell to edit — percentages and charts update instantly</div>
+    </div>
+    <button class="pdf-btn" onclick="window.print()">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 15V3M6 9l6 6 6-6M3 19h18"/>
+      </svg>
+      Generate PDF Report
+    </button>
+  </div>
+
+  <!-- WEEK PICKER -->
+  <div class="card-sm">
+    <div class="section-lbl">Select Your Weeks</div>
+    <div class="week-picker">
+      <label style="border:1.5px solid #1E3A5F33">
+        <div class="dot" style="background:#1E3A5F"></div>
+        <span class="lbl" style="color:#1E3A5F">This Week</span>
+        <input type="date" id="lastDate" oninput="onDateChange()">
+        <span class="range" id="lastRange"></span>
+      </label>
+      <label style="border:1.5px solid #2563EB33">
+        <div class="dot" style="background:#2563EB"></div>
+        <span class="lbl" style="color:#2563EB">Goal Week</span>
+        <input type="date" id="goalDate" oninput="onDateChange()">
+        <span class="range" id="goalRange"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- PAGE 1 -->
+  <div class="card" id="page1">
+    <div class="page-header" id="page1-header" style="background:linear-gradient(135deg,#1E3A5F,#2563EB)">
+      <div>
+        <div class="sub" id="page1-sub">Page 1 of 2 · Integrid · Sales &amp; BD</div>
+        <div class="title">THIS WEEK — Time Audit</div>
+      </div>
+      <div class="gauge-wrap">
+        <svg id="gauge-last" width="116" height="62" style="overflow:visible"></svg>
+        <div class="gauge-label" id="gauge-last-lbl"></div>
+      </div>
+    </div>
+    <div class="page-body">
+      <div class="grid-layout">
+        <div class="grid-table" id="grid-last"></div>
+        <div class="grid-chart">
+          <svg id="pie-last" width="186" height="186"></svg>
+          <div class="legend" id="legend-last"></div>
+        </div>
+      </div>
+      <div style="margin-top:18px" id="obs-panel"></div>
+    </div>
+  </div>
+
+  <!-- DELTA BAR -->
+  <div class="delta-bar" id="delta-bar">
+    <div class="label">WEEK-OVER-WEEK</div>
+    <div class="delta-stats" id="delta-stats"></div>
+  </div>
+
+  <!-- PAGE 2 -->
+  <div class="card" id="page2">
+    <div class="page-header" id="page2-header" style="background:linear-gradient(135deg,#2563EB,#7C3AED)">
+      <div>
+        <div class="sub" id="page2-sub">Page 2 of 2 · Integrid · Sales &amp; BD</div>
+        <div class="title">NEXT WEEK — Goal Design</div>
+      </div>
+      <div class="gauge-wrap">
+        <svg id="gauge-goal" width="116" height="62" style="overflow:visible"></svg>
+        <div class="gauge-label" id="gauge-goal-lbl"></div>
+      </div>
+    </div>
+    <div class="page-body">
+      <div class="grid-layout">
+        <div class="grid-table" id="grid-goal"></div>
+        <div class="grid-chart">
+          <svg id="pie-goal" width="186" height="186"></svg>
+          <div class="legend" id="legend-goal"></div>
+        </div>
+      </div>
+      <div style="margin-top:18px">
+        <div class="section-lbl">Action Plan — 3 Levers to Hit Your Goal</div>
+        <div class="action-grid" id="action-plan"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMMITMENT STRIP -->
+  <div class="commit-strip">
+    <div class="commit-cell" style="background:#F0FDF4">
+      <div class="commit-lbl">SUCCESS =</div>
+      <div class="commit-val" style="color:#059669" id="commit-success"></div>
+    </div>
+    <div class="commit-cell" style="background:#EFF6FF">
+      <div class="commit-lbl">REVIEW</div>
+      <div class="commit-val" style="color:#2563EB;font-weight:700">Friday 4:30 PM</div>
+    </div>
+    <div class="commit-cell" style="background:#F8FAFC">
+      <div class="commit-lbl">ACCOUNTABILITY PARTNER</div>
+      <input class="commit-input" type="text" placeholder="Name..." id="commit-partner">
+    </div>
+    <div class="commit-cell" style="background:#F8FAFC">
+      <div class="commit-lbl">WEEK OF</div>
+      <div style="font-size:13px;font-weight:600;color:#374151" id="commit-weekof">Set date above</div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<!-- ═══════════════ PRINT LAYOUT ═══════════════ -->
+<div class="print-only" id="print-layout"></div>
+
+<script>
+// ──────────────────────────────────────────────────────────────────────────────
+// DATA
+// ──────────────────────────────────────────────────────────────────────────────
+const CATS = [
+  { key:'rga',      label:'RGAs — Sales & Business Dev.', short:'RGAs',       color:'#2563EB', bg:'#EFF6FF', border:'#BFDBFE' },
+  { key:'admin',    label:'Admin Work',                   short:'Admin',      color:'#EA580C', bg:'#FFF7ED', border:'#FED7AA' },
+  { key:'ops',      label:'Operational Work',             short:'Operations', color:'#059669', bg:'#ECFDF5', border:'#A7F3D0' },
+  { key:'learning', label:'Learning / Training',          short:'Learning',   color:'#D97706', bg:'#FFFBEB', border:'#FDE68A' },
+  { key:'busy',     label:'Busy Work',                    short:'Busy Work',  color:'#DC2626', bg:'#FEF2F2', border:'#FECACA' },
+  { key:'personal', label:'Personal / Breaks',            short:'Personal',   color:'#7C3AED', bg:'#F5F3FF', border:'#DDD6FE' },
+];
+
+const ACTION_COLS = [
+  { key:'leaks',  icon:'🚫', title:'Remove Time Leaks',  color:'#DC2626', bg:'#FEF2F2', border:'#FECACA',
+    fixed:['Reactive email all day — batch 9 AM + 3 PM only','Ops escalations — define L1/L2 rules first','No-agenda calls — require written agenda 24h ahead'], numExtras:2 },
+  { key:'blocks', icon:'🔒', title:'Protect RGA Blocks',  color:'#059669', bg:'#F0FDF4', border:'#A7F3D0',
+    fixed:['Mon–Thu 8–9:30 AM — Outbound prospecting','Tue + Thu 2–4 PM — Proposals & follow-up','Flex slots Mon–Fri — Discovery calls / demos'], numExtras:1 },
+  { key:'rules',  icon:'📋', title:'Execution Rules',     color:'#2563EB', bg:'#EFF6FF', border:'#BFDBFE',
+    fixed:["RGA blocks in calendar before Fri EOD — never moved","Email 9 AM + 3 PM only. Inbox closed otherwise.","No meeting without written agenda. Non-negotiable.","Busy Work — 'Later' list, acted on at EOD only.","Fri 4:30 PM: 10-min review — hit my RGA target?"], numExtras:0 },
+];
+
+const OBS_FIELDS = [
+  { key:'rga_actual', label:'My Actual RGA Hours',   ph:'e.g. 4h (10%)',              bg:'#EFF6FF', border:'#BFDBFE', lc:'#2563EB' },
+  { key:'top_drain',  label:'Biggest Time Drain',    ph:'e.g. Email backlog...',       bg:'#FFF7ED', border:'#FED7AA', lc:'#EA580C' },
+  { key:'cut_now',    label:"One Thing I'd Cut Now", ph:'e.g. No-agenda vendor calls', bg:'#FEF2F2', border:'#FECACA', lc:'#DC2626' },
+];
+
+// Mutable state
+const state = {
+  lastH: { rga:4,  admin:14, ops:12, learning:2, busy:5,  personal:3 },
+  goalH: { rga:12, admin:8,  ops:10, learning:2, busy:4,  personal:4 },
+  lastN: {
+    rga:'Outbound calls, 1 discovery, 1 proposal — squeezed between fires',
+    admin:'Email backlog, invoicing, vendor follow-ups, scheduling',
+    ops:'Ticket escalations, staff check-ins, client fire-drills',
+    learning:'Vendor webinar, brief industry reading',
+    busy:'Unstructured meetings, reactive interrupts, rework',
+    personal:'Lunch, mental reset',
+  },
+  goalN: {
+    rga:'+8h vs last week — 3 discovery calls + 2 proposals + daily outbound',
+    admin:'-6h — Batched 2x/day; recurring tasks delegated',
+    ops:'-2h — SOPs handle L1; you own escalations only',
+    learning:'Capped 30 min/day — vendor updates only',
+    busy:'-1h — No meeting without agenda; async-first default',
+    personal:'+1h — Intentional recovery between RGA blocks',
+  },
+  obsData: { rga_actual:'', top_drain:'', cut_now:'' },
+  planExtras: { leaks:['',''], blocks:[''], rules:[] },
+  lastDate: '',
+  goalDate: '',
+};
+
+// ──────────────────────────────────────────────────────────────────────────────
+// HELPERS
+// ──────────────────────────────────────────────────────────────────────────────
+function sumH(h) { return CATS.reduce((s,c) => s + (parseFloat(h[c.key])||0), 0); }
+function rgaPct(h) { const t=sumH(h); return t>0 ? Math.round(((parseFloat(h.rga)||0)/t)*100) : 0; }
+function pctColor(p) { return p>=25 ? '#059669' : p>=15 ? '#D97706' : '#DC2626'; }
+function weekRange(ds) {
+  if (!ds) return '';
+  const d = new Date(ds+'T12:00:00');
+  const day = d.getDay();
+  const mon = new Date(d); mon.setDate(d.getDate()-((day+6)%7));
+  const sun = new Date(mon); sun.setDate(mon.getDate()+6);
+  const fmt = x => x.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  return fmt(mon)+' – '+fmt(sun)+', '+sun.getFullYear();
+}
+function el(tag, attrs, ...children) {
+  const e = document.createElement(tag);
+  if (attrs) Object.entries(attrs).forEach(([k,v]) => {
+    if (k==='style' && typeof v==='object') Object.assign(e.style, v);
+    else if (k==='class') e.className=v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2).toLowerCase(), v);
+    else e.setAttribute(k,v);
+  });
+  children.forEach(c => { if(c==null) return; e.appendChild(typeof c==='string' ? document.createTextNode(c) : c); });
+  return e;
+}
+function svg(tag, attrs, ...children) {
+  const NS='http://www.w3.org/2000/svg';
+  const e = document.createElementNS(NS,tag);
+  if (attrs) Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v));
+  children.forEach(c=>{ if(c) e.appendChild(c); });
+  return e;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// PIE CHART
+// ──────────────────────────────────────────────────────────────────────────────
+function buildPiePaths(hours, cx, cy, R, ri) {
+  const t = sumH(hours);
+  let angle = -Math.PI/2;
+  return CATS.map(c => {
+    const v = parseFloat(hours[c.key])||0;
+    const frac = t>0 ? v/t : 0;
+    if (frac<0.005) return null;
+    const sweep = frac*2*Math.PI;
+    const a0=angle; angle+=sweep; const a1=angle;
+    const large = sweep>Math.PI?1:0;
+    const x0o=cx+R*Math.cos(a0), y0o=cy+R*Math.sin(a0);
+    const x1o=cx+R*Math.cos(a1), y1o=cy+R*Math.sin(a1);
+    const x0i=cx+ri*Math.cos(a0), y0i=cy+ri*Math.sin(a0);
+    const x1i=cx+ri*Math.cos(a1), y1i=cy+ri*Math.sin(a1);
+    const d='M'+x0i+' '+y0i+' L'+x0o+' '+y0o+' A'+R+' '+R+' 0 '+large+' 1 '+x1o+' '+y1o+' L'+x1i+' '+y1i+' A'+ri+' '+ri+' 0 '+large+' 0 '+x0i+' '+y0i+' Z';
+    return { color:c.color, d };
+  }).filter(Boolean);
+}
+
+// Animated pie state per chart
+const pieState = {};
+
+function initPie(svgId, hours) {
+  pieState[svgId] = { current: Object.assign({},hours), target: Object.assign({},hours), raf:null, t0:null };
+}
+
+function animatePie(svgId) {
+  const ps = pieState[svgId];
+  if (!ps) return;
+  cancelAnimationFrame(ps.raf);
+  ps.start = Object.assign({},ps.current);
+  ps.t0 = performance.now();
+  const dur = 350;
+  function step(now) {
+    const t = Math.min((now-ps.t0)/dur,1);
+    const ease = t<0.5 ? 2*t*t : -1+(4-2*t)*t;
+    CATS.forEach(c => { ps.current[c.key] = ps.start[c.key]+(ps.target[c.key]-ps.start[c.key])*ease; });
+    drawPie(svgId, ps.current);
+    if (t<1) ps.raf = requestAnimationFrame(step);
+  }
+  ps.raf = requestAnimationFrame(step);
+}
+
+function drawPie(svgId, hours) {
+  const svgEl = document.getElementById(svgId);
+  if (!svgEl) return;
+  const s=186, cx=s/2, cy=s/2, R=s*0.4, ri=s*0.23;
+  const t = CATS.reduce((s,c)=>s+(hours[c.key]||0),0);
+  const rp = t>0 ? Math.round(((hours.rga||0)/t)*100) : 0;
+  const col = pctColor(rp);
+  const NS='http://www.w3.org/2000/svg';
+
+  // Clear except defs
+  while(svgEl.firstChild) svgEl.removeChild(svgEl.firstChild);
+
+  if (t===0) {
+    const c=document.createElementNS(NS,'circle');
+    c.setAttribute('cx',cx); c.setAttribute('cy',cy); c.setAttribute('r',R); c.setAttribute('fill','#F1F5F9');
+    svgEl.appendChild(c);
+  } else {
+    buildPiePaths(hours,cx,cy,R,ri).forEach(({color,d})=>{
+      const p=document.createElementNS(NS,'path');
+      p.setAttribute('d',d); p.setAttribute('fill',color);
+      p.setAttribute('stroke','white'); p.setAttribute('stroke-width','2');
+      svgEl.appendChild(p);
+    });
+  }
+  const hole=document.createElementNS(NS,'circle');
+  hole.setAttribute('cx',cx); hole.setAttribute('cy',cy); hole.setAttribute('r',ri-1); hole.setAttribute('fill','white');
+  svgEl.appendChild(hole);
+
+  [[rp+'%', cy-8, s*0.11, '800', col],[' RGA', cy+9, s*0.068,'400','#94A3B8'],[Math.round(t)+'h total',cy+24,s*0.062,'400','#94A3B8']].forEach(([txt,y,fs,fw,fill])=>{
+    const t=document.createElementNS(NS,'text');
+    t.setAttribute('x',cx); t.setAttribute('y',y); t.setAttribute('text-anchor','middle');
+    t.setAttribute('font-size',fs); t.setAttribute('font-weight',fw);
+    t.setAttribute('font-family','Syne,sans-serif'); t.setAttribute('fill',fill);
+    t.textContent=txt; svgEl.appendChild(t);
+  });
+}
+
+function updatePie(svgId, hours) {
+  if (!pieState[svgId]) { initPie(svgId, hours); drawPie(svgId,hours); return; }
+  pieState[svgId].target = Object.assign({},hours);
+  animatePie(svgId);
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// GAUGE
+// ──────────────────────────────────────────────────────────────────────────────
+function drawGauge(svgId, lblId, hours) {
+  const svgEl = document.getElementById(svgId);
+  const lblEl = document.getElementById(lblId);
+  if (!svgEl || !lblEl) return;
+  const p = rgaPct(hours);
+  const r=44, cx=58, cy=52;
+  const sweep=(p/100)*Math.PI;
+  const x1=cx+r*Math.cos(Math.PI), y1=cy+r*Math.sin(Math.PI);
+  const x2=cx+r*Math.cos(Math.PI+sweep), y2=cy+r*Math.sin(Math.PI+sweep);
+  const track='M'+(cx-r)+' '+cy+' A'+r+' '+r+' 0 0 1 '+(cx+r)+' '+cy;
+  const arc='M'+x1+' '+y1+' A'+r+' '+r+' 0 '+(p>=50?1:0)+' 1 '+x2+' '+y2;
+  const lc = p>=25?'#86EFAC':p>=15?'#FDE68A':'#FCA5A5';
+  const lt = p>=25?'On target':p>=15?'Progress':'Needs focus';
+  const NS='http://www.w3.org/2000/svg';
+  while(svgEl.firstChild) svgEl.removeChild(svgEl.firstChild);
+  const t1=document.createElementNS(NS,'path');
+  t1.setAttribute('d',track); t1.setAttribute('fill','none'); t1.setAttribute('stroke','rgba(255,255,255,0.2)'); t1.setAttribute('stroke-width','8'); t1.setAttribute('stroke-linecap','round');
+  svgEl.appendChild(t1);
+  if(p>0){
+    const a1=document.createElementNS(NS,'path');
+    a1.setAttribute('d',arc); a1.setAttribute('fill','none'); a1.setAttribute('stroke','white'); a1.setAttribute('stroke-width','8'); a1.setAttribute('stroke-linecap','round');
+    a1.style.transition='all 0.4s ease';
+    svgEl.appendChild(a1);
+  }
+  [[p+'%',cy-4,'20','800','white'],[' RGA RATE',cy+13,'9','400','rgba(255,255,255,0.65)']].forEach(([txt,y,fs,fw,fill])=>{
+    const t=document.createElementNS(NS,'text');
+    t.setAttribute('x',cx); t.setAttribute('y',y); t.setAttribute('text-anchor','middle');
+    t.setAttribute('font-size',fs); t.setAttribute('font-weight',fw);
+    t.setAttribute('font-family','Syne,sans-serif'); t.setAttribute('fill',fill);
+    t.textContent=txt; svgEl.appendChild(t);
+  });
+  lblEl.textContent=lt; lblEl.style.color=lc;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// LEGEND
+// ──────────────────────────────────────────────────────────────────────────────
+function renderLegend(containerId, hours) {
+  const el2 = document.getElementById(containerId);
+  if (!el2) return;
+  el2.innerHTML='';
+  const t=sumH(hours);
+  CATS.forEach(c=>{
+    const h=parseFloat(hours[c.key])||0;
+    const p=t>0?(h/t*100).toFixed(0):'0';
+    const row=document.createElement('div'); row.className='legend-row';
+    row.innerHTML='<div class="legend-dot" style="background:'+c.color+'"></div>'
+      +'<span class="legend-name">'+c.short+'</span>'
+      +'<span class="legend-h" style="color:'+c.color+'">'+h+'h</span>'
+      +'<span class="legend-p">'+p+'%</span>';
+    el2.appendChild(row);
+  });
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// SPREADSHEET GRID
+// ──────────────────────────────────────────────────────────────────────────────
+function renderGrid(containerId, hours, notes, onHourChange, onNoteChange) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML='';
+  const sheet = document.createElement('div');
+  sheet.className='spreadsheet';
+
+  // Header
+  const head = document.createElement('div'); head.className='ss-head';
+  ['CATEGORY','HOURS','% WEEK','NOTES'].forEach((h,i)=>{
+    const d=document.createElement('div');
+    d.textContent=h;
+    if(i===2) d.style.textAlign='right';
+    head.appendChild(d);
+  });
+  sheet.appendChild(head);
+
+  // Rows
+  CATS.forEach((cat,i)=>{
+    const h=parseFloat(hours[cat.key])||0;
+    const t=sumH(hours);
+    const p=t>0?(h/t*100).toFixed(1):'0.0';
+    const isRGA=cat.key==='rga';
+
+    const row=document.createElement('div');
+    row.className='ss-row '+(isRGA?'rga-row':i%2===0?'even':'odd');
+    row.id='ss-row-'+containerId+'-'+cat.key;
+
+    // Label cell
+    const lbl=document.createElement('div'); lbl.className='ss-label';
+    lbl.innerHTML='<div class="dot" style="background:'+cat.color+'"></div>'
+      +'<span class="cat-name" style="font-weight:'+(isRGA?700:500)+';color:'+(isRGA?'#1E3A5F':'#374151')+'">'+cat.label+'</span>'
+      +(isRGA?'<span class="rga-badge">RGA</span>':'');
+    row.appendChild(lbl);
+
+    // Hours cell
+    const hCell=document.createElement('div'); hCell.className='ss-hours';
+    if(isRGA) hCell.style.background='#EFF6FF';
+    const inp=document.createElement('input');
+    inp.type='number'; inp.min='0'; inp.max='168'; inp.step='0.5';
+    inp.value=h;
+    inp.style.color=isRGA?'#2563EB':'#1E293B';
+    inp.addEventListener('focus',()=>inp.select());
+    inp.addEventListener('input',()=>{
+      const n=parseFloat(inp.value);
+      if(!isNaN(n)&&n>=0) onHourChange(cat.key, Math.round(n*2)/2);
+    });
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key==='Tab') inp.blur(); });
+    hCell.appendChild(inp); row.appendChild(hCell);
+
+    // Pct cell
+    const pCell=document.createElement('div'); pCell.className='ss-pct';
+    pCell.id='ss-pct-'+containerId+'-'+cat.key;
+    pCell.style.color=isRGA?pctColor(parseFloat(p)):'#64748B';
+    pCell.textContent=p+'%';
+    row.appendChild(pCell);
+
+    // Note cell
+    const nCell=document.createElement('div'); nCell.className='ss-note';
+    const nInp=document.createElement('input');
+    nInp.type='text'; nInp.value=notes[cat.key]||''; nInp.placeholder='Add note...';
+    nInp.addEventListener('input',()=>onNoteChange(cat.key, nInp.value));
+    nCell.appendChild(nInp); row.appendChild(nCell);
+
+    sheet.appendChild(row);
+  });
+
+  // Total row
+  const totRow=document.createElement('div'); totRow.className='ss-total';
+  totRow.id='ss-total-'+containerId;
+  ['<div>TOTAL</div>','<div class="total-hrs"></div>','<div class="total-pct">100%</div>','<div class="total-msg"></div>'].forEach(h=>{
+    totRow.insertAdjacentHTML('beforeend',h);
+  });
+  sheet.appendChild(totRow);
+  container.appendChild(sheet);
+  updateGridTotals(containerId, hours);
+}
+
+function updateGridTotals(containerId, hours) {
+  const t=sumH(hours);
+  const totRow=document.getElementById('ss-total-'+containerId);
+  if(totRow){
+    const hrsEl=totRow.querySelector('.total-hrs');
+    const msgEl=totRow.querySelector('.total-msg');
+    if(hrsEl){ hrsEl.textContent=t+'h'; hrsEl.style.color=t>40?'#DC2626':'#1E3A5F'; }
+    if(msgEl){ msgEl.textContent=t>40?'Over '+(t-40).toFixed(1)+'h target':'Within 40h target'; msgEl.style.color=t>40?'#DC2626':'#059669'; }
+  }
+  CATS.forEach(cat=>{
+    const h=parseFloat(hours[cat.key])||0;
+    const p=t>0?(h/t*100).toFixed(1):'0.0';
+    const isRGA=cat.key==='rga';
+    const pEl=document.getElementById('ss-pct-'+containerId+'-'+cat.key);
+    if(pEl){ pEl.textContent=p+'%'; pEl.style.color=isRGA?pctColor(parseFloat(p)):'#64748B'; }
+  });
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// OBS PANEL
+// ──────────────────────────────────────────────────────────────────────────────
+function renderObsPanel() {
+  const cont=document.getElementById('obs-panel');
+  if(!cont) return;
+  cont.innerHTML='';
+  const grid=document.createElement('div'); grid.className='obs-panel';
+  OBS_FIELDS.forEach(f=>{
+    const card=document.createElement('div');
+    card.className='obs-card';
+    card.style.background=f.bg; card.style.borderColor=f.border;
+    const lbl=document.createElement('div'); lbl.className='obs-lbl';
+    lbl.style.color=f.lc; lbl.textContent=f.label;
+    const ta=document.createElement('textarea');
+    ta.rows=2; ta.placeholder=f.ph; ta.value=state.obsData[f.key]||'';
+    ta.addEventListener('input',()=>{ state.obsData[f.key]=ta.value; });
+    card.appendChild(lbl); card.appendChild(ta); grid.appendChild(card);
+  });
+  cont.appendChild(grid);
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// ACTION PLAN
+// ──────────────────────────────────────────────────────────────────────────────
+function renderActionPlan() {
+  const cont=document.getElementById('action-plan');
+  if(!cont) return;
+  cont.innerHTML='';
+  ACTION_COLS.forEach(col=>{
+    const colEl=document.createElement('div');
+    colEl.className='action-col';
+    colEl.style.borderColor=col.border; colEl.style.background=col.bg;
+    const head=document.createElement('div'); head.className='action-col-head';
+    head.style.color=col.color; head.style.borderColor=col.border;
+    head.textContent=col.icon+' '+col.title;
+    const body=document.createElement('div'); body.className='action-col-body';
+    col.fixed.forEach(item=>{
+      const row=document.createElement('div'); row.className='action-item';
+      const dot=document.createElement('div'); dot.className='action-dot'; dot.style.background=col.color;
+      const txt=document.createElement('span'); txt.className='action-text'; txt.textContent=item;
+      row.appendChild(dot); row.appendChild(txt); body.appendChild(row);
+    });
+    for(let i=0;i<col.numExtras;i++){
+      const ta=document.createElement('textarea');
+      ta.className='action-extra'; ta.rows=2; ta.placeholder='Add your own...';
+      ta.style.borderColor=col.border;
+      const idx=i;
+      ta.value=(state.planExtras[col.key]||[])[idx]||'';
+      ta.addEventListener('input',()=>{
+        if(!state.planExtras[col.key]) state.planExtras[col.key]=[];
+        state.planExtras[col.key][idx]=ta.value;
+      });
+      body.appendChild(ta);
+    }
+    colEl.appendChild(head); colEl.appendChild(body); cont.appendChild(colEl);
+  });
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// DELTA BAR
+// ──────────────────────────────────────────────────────────────────────────────
+function updateDelta() {
+  const statsEl=document.getElementById('delta-stats');
+  if(!statsEl) return;
+  const lp=rgaPct(state.lastH), gp=rgaPct(state.goalH);
+  const dp=gp-lp, dh=(parseFloat(state.goalH.rga)||0)-(parseFloat(state.lastH.rga)||0);
+  const stats=[
+    {label:'Last Week RGA', val:lp+'%',                           neutral:true},
+    {label:'Goal Week RGA', val:gp+'%',                           neutral:true},
+    {label:'Rate Change',   val:(dp>=0?'+':'')+dp.toFixed(1)+'%', good:dp>=0},
+    {label:'Hours Gained',  val:(dh>=0?'+':'')+dh.toFixed(1)+'h', good:dh>=0},
+  ];
+  statsEl.innerHTML='';
+  stats.forEach(s=>{
+    const col=s.neutral?'rgba(255,255,255,0.95)':s.good?'#86EFAC':'#FCA5A5';
+    const d=document.createElement('div'); d.className='delta-stat';
+    d.innerHTML='<div class="delta-val" style="color:'+col+'">'+s.val+'</div><div class="delta-lbl">'+s.label+'</div>';
+    statsEl.appendChild(d);
+  });
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// COMMITMENT STRIP
+// ──────────────────────────────────────────────────────────────────────────────
+function updateCommitment() {
+  const gp=rgaPct(state.goalH);
+  const successEl=document.getElementById('commit-success');
+  if(successEl) successEl.textContent='RGA ≥ '+(state.goalH.rga||0)+'h ('+gp+'%)';
+  const woEl=document.getElementById('commit-weekof');
+  if(woEl) woEl.textContent=weekRange(state.lastDate)||'Set date above';
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// DATE PICKER
+// ──────────────────────────────────────────────────────────────────────────────
+function onDateChange() {
+  state.lastDate=document.getElementById('lastDate').value;
+  state.goalDate=document.getElementById('goalDate').value;
+  document.getElementById('lastRange').textContent=weekRange(state.lastDate);
+  document.getElementById('goalRange').textContent=weekRange(state.goalDate);
+  const lastWL=weekRange(state.lastDate);
+  const goalWL=weekRange(state.goalDate);
+  const p1sub=document.getElementById('page1-sub');
+  const p2sub=document.getElementById('page2-sub');
+  if(p1sub) p1sub.textContent='Page 1 of 2 · Integrid · Sales & BD'+(lastWL?' · '+lastWL:'');
+  if(p2sub) p2sub.textContent='Page 2 of 2 · Integrid · Sales & BD'+(goalWL?' · '+goalWL:'');
+  updateCommitment();
+  renderPrintLayout();
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// PRINT LAYOUT
+// ──────────────────────────────────────────────────────────────────────────────
+function printTableHTML(hours, notes) {
+  const t=sumH(hours);
+  let rows='';
+  CATS.forEach((cat,i)=>{
+    const h=parseFloat(hours[cat.key])||0;
+    const p=t>0?(h/t*100).toFixed(1):'0.0';
+    const isRGA=cat.key==='rga';
+    const bg=isRGA?'#EFF6FF':i%2===0?'white':'#F8FAFC';
+    rows+=`<tr style="background:${bg}">
+      <td style="padding:5px 8px;font-weight:${isRGA?700:500};color:${isRGA?'#1E3A5F':'#374151'}">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${cat.color};margin-right:6px;vertical-align:middle"></span>
+        ${cat.label}${isRGA?'<span style="margin-left:6px;font-size:7pt;background:#2563EB;color:white;border-radius:3px;padding:1px 4px">RGA</span>':''}
+      </td>
+      <td style="padding:5px 8px;text-align:center;font-weight:700;color:${isRGA?'#2563EB':'#374151'}">${h}h</td>
+      <td style="padding:5px 8px;text-align:center;font-weight:700;color:${isRGA?pctColor(parseFloat(p)):'#64748B'}">${p}%</td>
+      <td style="padding:5px 8px;color:#64748B;font-size:8pt">${notes[cat.key]||''}</td>
+    </tr>`;
+  });
+  const overMsg=t>40?'Over '+(t-40).toFixed(1)+'h target':'Within 40h target';
+  const overCol=t>40?'#DC2626':'#059669';
+  return `<table class="print-table" style="width:100%;border-collapse:collapse;font-size:9pt;font-family:Syne,sans-serif">
+    <thead><tr style="background:#1E3A5F">
+      <th style="padding:5px 8px;text-align:left;color:white;font-weight:700;font-size:8pt;letter-spacing:0.06em">Category</th>
+      <th style="padding:5px 8px;text-align:center;color:white;font-weight:700;font-size:8pt">Hours</th>
+      <th style="padding:5px 8px;text-align:center;color:white;font-weight:700;font-size:8pt">% Week</th>
+      <th style="padding:5px 8px;text-align:left;color:white;font-weight:700;font-size:8pt">Notes / Activities</th>
+    </tr></thead>
+    <tbody>${rows}
+    <tr style="background:#EFF6FF;border-top:2px solid #BFDBFE">
+      <td style="padding:5px 8px;font-weight:800;color:#1E3A5F">TOTAL</td>
+      <td style="padding:5px 8px;text-align:center;font-weight:800;color:${t>40?'#DC2626':'#1E3A5F'}">${t}h</td>
+      <td style="padding:5px 8px;text-align:center;font-weight:700;color:#1E3A5F">100%</td>
+      <td style="padding:5px 8px;font-size:8pt;font-weight:600;color:${overCol}">${overMsg}</td>
+    </tr></tbody>
+  </table>`;
+}
+
+function printLegendHTML(hours) {
+  const t=sumH(hours);
+  return CATS.map(c=>{
+    const h=parseFloat(hours[c.key])||0;
+    const p=t>0?(h/t*100).toFixed(0):'0';
+    return `<div style="display:flex;align-items:center;gap:5px;font-size:8pt;margin-bottom:4px;font-family:Syne,sans-serif">
+      <div style="width:7px;height:7px;border-radius:2px;background:${c.color};flex-shrink:0"></div>
+      <span style="flex:1;color:#64748B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.short}</span>
+      <span style="font-weight:700;color:${c.color};min-width:22px;text-align:right">${h}h</span>
+      <span style="color:#94A3B8;min-width:26px;text-align:right">${p}%</span>
+    </div>`;
+  }).join('');
+}
+
+function printPieHTML(hours, size) {
+  const s=size||145;
+  const cx=s/2, cy=s/2, R=s*0.4, ri=s*0.23;
+  const t=sumH(hours);
+  const rp=rgaPct(hours);
+  const col=pctColor(rp);
+  let paths='';
+  const slices=buildPiePaths(hours,cx,cy,R,ri);
+  if(t===0){
+    paths=`<circle cx="${cx}" cy="${cy}" r="${R}" fill="#F1F5F9"/>`;
+  } else {
+    slices.forEach(sl=>{ paths+=`<path d="${sl.d}" fill="${sl.color}" stroke="white" stroke-width="2"/>`; });
+  }
+  return `<svg width="${s}" height="${s}" xmlns="http://www.w3.org/2000/svg">
+    ${paths}
+    <circle cx="${cx}" cy="${cy}" r="${ri-1}" fill="white"/>
+    <text x="${cx}" y="${cy-8}" text-anchor="middle" font-size="${s*0.11}" font-weight="800" font-family="Syne,sans-serif" fill="${col}">${rp}%</text>
+    <text x="${cx}" y="${cy+9}" text-anchor="middle" font-size="${s*0.068}" font-family="Syne,sans-serif" fill="#94A3B8">RGA</text>
+    <text x="${cx}" y="${cy+24}" text-anchor="middle" font-size="${s*0.062}" font-family="Syne,sans-serif" fill="#94A3B8">${t}h total</text>
+  </svg>`;
+}
+
+function printPageHeaderHTML(pageNum, title, weekLabel, accentA, accentB, rp) {
+  const sub='Page '+pageNum+' of 2 · Integrid · Sales & Business Development'+(weekLabel?' · '+weekLabel:'');
+  const lc=rp>=25?'#86EFAC':rp>=15?'#FDE68A':'#FCA5A5';
+  const lt=rp>=25?'On target':rp>=15?'Progress':'Needs focus';
+  return `<div class="print-header" style="background:linear-gradient(135deg,${accentA},${accentB})">
+    <div>
+      <div style="color:rgba(255,255,255,0.6);font-size:9pt;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:3px;font-family:Syne,sans-serif">${sub}</div>
+      <div style="color:white;font-size:16pt;font-weight:800;font-family:Syne,sans-serif">${title}</div>
+    </div>
+    <div style="text-align:center;min-width:110px">
+      <div style="font-size:22pt;font-weight:800;color:white;font-family:Syne,sans-serif">${rp}%</div>
+      <div style="font-size:8pt;color:rgba(255,255,255,0.7);letter-spacing:0.08em;font-family:Syne,sans-serif">RGA RATE</div>
+      <div style="font-size:9pt;font-weight:700;color:${lc};font-family:Syne,sans-serif">${lt}</div>
+    </div>
+  </div>`;
+}
+
+function printObsHTML() {
+  return `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+    ${OBS_FIELDS.map(f=>`<div style="border-radius:6px;border:1px solid ${f.border};background:${f.bg};padding:7px 10px">
+      <div style="font-size:7pt;font-weight:700;color:${f.lc};text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px;font-family:Syne,sans-serif">${f.label}</div>
+      <div style="font-size:9pt;color:#374151;min-height:18px;font-family:Syne,sans-serif">${state.obsData[f.key]||''}</div>
+    </div>`).join('')}
+  </div>`;
+}
+
+function printActionHTML() {
+  return `<div>
+    <div style="font-size:8pt;font-weight:700;color:#1E3A5F;text-transform:uppercase;letter-spacing:0.09em;font-family:Syne,sans-serif;margin-bottom:8px">Action Plan — 3 Levers to Hit Your Goal</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      ${ACTION_COLS.map(col=>`<div style="border-radius:8px;border:1px solid ${col.border};background:${col.bg}">
+        <div style="padding:6px 10px 5px;border-bottom:1px solid ${col.border};font-size:9pt;font-weight:800;color:${col.color};font-family:Syne,sans-serif">${col.icon} ${col.title}</div>
+        <div style="padding:7px 10px">
+          ${col.fixed.map(item=>`<div style="display:flex;gap:6px;margin-bottom:5px;align-items:flex-start">
+            <div style="width:5px;height:5px;border-radius:2px;background:${col.color};flex-shrink:0;margin-top:4px"></div>
+            <span style="font-size:8pt;color:#374151;line-height:1.4;font-family:Syne,sans-serif">${item}</span>
+          </div>`).join('')}
+          ${Array.from({length:col.numExtras}).map((_,i)=>`<div style="font-size:8pt;color:#64748B;border-top:1px dashed ${col.border};margin-top:5px;padding-top:5px;font-family:Syne,sans-serif">${(state.planExtras[col.key]||[])[i]||'—'}</div>`).join('')}
+        </div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function renderPrintLayout() {
+  const cont=document.getElementById('print-layout');
+  if(!cont) return;
+  const lWL=weekRange(state.lastDate);
+  const gWL=weekRange(state.goalDate);
+  const lrp=rgaPct(state.lastH), grp=rgaPct(state.goalH);
+  const dp=grp-lrp, dh=(parseFloat(state.goalH.rga)||0)-(parseFloat(state.lastH.rga)||0);
+  const goalRGAPct=grp;
+
+  const partnerVal=document.getElementById('commit-partner')?.value||'';
+
+  cont.innerHTML=`
+  <!-- Print Page 1 -->
+  <div class="print-page">
+    ${printPageHeaderHTML(1,'THIS WEEK — Time Audit',lWL,'#1E3A5F','#2563EB',lrp)}
+    <div class="print-body" style="display:flex;gap:14px;padding:12px 16px 8px">
+      <div style="flex:1">${printTableHTML(state.lastH,state.lastN)}</div>
+      <div class="print-legend-wrap" style="width:155px;flex-shrink:0;display:flex;flex-direction:column;gap:10px">
+        ${printPieHTML(state.lastH,145)}
+        <div>${printLegendHTML(state.lastH)}</div>
+      </div>
+    </div>
+    <div style="padding:0 16px 14px">${printObsHTML()}</div>
+  </div>
+
+  <!-- Print Page 2 -->
+  <div class="print-page">
+    ${printPageHeaderHTML(2,'NEXT WEEK — Goal Design',gWL,'#2563EB','#7C3AED',grp)}
+    <div style="display:flex;gap:14px;padding:12px 16px 8px">
+      <div style="flex:1">${printTableHTML(state.goalH,state.goalN)}</div>
+      <div style="width:155px;flex-shrink:0;display:flex;flex-direction:column;gap:10px">
+        ${printPieHTML(state.goalH,145)}
+        <div>${printLegendHTML(state.goalH)}</div>
+      </div>
+    </div>
+    <div style="margin:4px 16px 10px;background:linear-gradient(135deg,#1E3A5F,#2563EB);border-radius:8px;padding:10px 18px;display:flex;align-items:center;justify-content:space-between">
+      <span style="color:rgba(255,255,255,0.65);font-size:8pt;font-weight:700;letter-spacing:0.1em;font-family:Syne,sans-serif">WEEK-OVER-WEEK</span>
+      <div style="display:flex;gap:24px">
+        ${[
+          {label:'Last Week',val:lrp+'%',neutral:true},
+          {label:'Goal Week',val:grp+'%',neutral:true},
+          {label:'Rate Change',val:(dp>=0?'+':'')+dp.toFixed(1)+'%',good:dp>=0},
+          {label:'Hours Gained',val:(dh>=0?'+':'')+dh.toFixed(1)+'h',good:dh>=0},
+        ].map(s=>`<div style="text-align:center">
+          <div style="font-size:13pt;font-weight:800;font-family:Syne,sans-serif;color:${s.neutral?'white':s.good?'#86EFAC':'#FCA5A5'}">${s.val}</div>
+          <div style="font-size:7pt;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.06em;font-family:Syne,sans-serif">${s.label}</div>
+        </div>`).join('')}
+      </div>
+    </div>
+    <div style="padding:0 16px 10px">${printActionHTML()}</div>
+    <div style="margin:0 16px 14px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+      <div style="background:#F0FDF4;border-radius:6px;padding:7px 10px;border:1px solid #A7F3D0">
+        <div style="font-size:7pt;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px;font-family:Syne,sans-serif">Success =</div>
+        <div style="font-size:10pt;font-weight:800;color:#059669;font-family:Syne,sans-serif">RGA ≥ ${state.goalH.rga||0}h (${goalRGAPct}%)</div>
+      </div>
+      <div style="background:#EFF6FF;border-radius:6px;padding:7px 10px;border:1px solid #BFDBFE">
+        <div style="font-size:7pt;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px;font-family:Syne,sans-serif">Review</div>
+        <div style="font-size:10pt;font-weight:700;color:#2563EB;font-family:Syne,sans-serif">Friday 4:30 PM</div>
+      </div>
+      <div style="background:#F8FAFC;border-radius:6px;padding:7px 10px;border:1px solid #E2E8F0">
+        <div style="font-size:7pt;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px;font-family:Syne,sans-serif">Accountability Partner</div>
+        <div style="font-size:10pt;color:#374151;font-weight:600;font-family:Syne,sans-serif">${partnerVal||'&nbsp;'}</div>
+      </div>
+      <div style="background:#F8FAFC;border-radius:6px;padding:7px 10px;border:1px solid #E2E8F0">
+        <div style="font-size:7pt;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px;font-family:Syne,sans-serif">Week Of</div>
+        <div style="font-size:10pt;color:#374151;font-weight:600;font-family:Syne,sans-serif">${lWL||'&nbsp;'}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// UPDATE — called whenever any data changes
+// ──────────────────────────────────────────────────────────────────────────────
+function updateAll() {
+  updatePie('pie-last', state.lastH);
+  updatePie('pie-goal', state.goalH);
+  drawGauge('gauge-last','gauge-last-lbl', state.lastH);
+  drawGauge('gauge-goal','gauge-goal-lbl', state.goalH);
+  renderLegend('legend-last', state.lastH);
+  renderLegend('legend-goal', state.goalH);
+  updateGridTotals('grid-last', state.lastH);
+  updateGridTotals('grid-goal', state.goalH);
+  updateDelta();
+  updateCommitment();
+  renderPrintLayout();
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// INIT
+// ──────────────────────────────────────────────────────────────────────────────
+function init() {
+  // Build grids
+  renderGrid('grid-last', state.lastH, state.lastN,
+    (k,v)=>{ state.lastH[k]=v; updateAll(); },
+    (k,v)=>{ state.lastN[k]=v; renderPrintLayout(); }
+  );
+  renderGrid('grid-goal', state.goalH, state.goalN,
+    (k,v)=>{ state.goalH[k]=v; updateAll(); },
+    (k,v)=>{ state.goalN[k]=v; renderPrintLayout(); }
+  );
+
+  // Init pies
+  initPie('pie-last', state.lastH);
+  initPie('pie-goal', state.goalH);
+
+  // Build static components
+  renderObsPanel();
+  renderActionPlan();
+
+  // Initial render
+  updateAll();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+<script src="workbook-storage.js"></script>
+<script>
+// STORAGE WIRING — Time Audit
+(function () {
+  // Inject save-status
+  var statusEl = document.createElement("div");
+  statusEl.id = "saveStatus";
+  statusEl.style.cssText = "font-size:11px;font-weight:700;letter-spacing:0.07em;color:#94A3B8;transition:color 0.3s;padding:4px 0;";
+  statusEl.textContent = "Connecting...";
+  var app = document.getElementById("app");
+  if (app) app.insertBefore(statusEl, app.firstChild);
+
+  function collect() {
+    return {
+      lastH: Object.assign({}, state.lastH),
+      goalH: Object.assign({}, state.goalH),
+      lastN: Object.assign({}, state.lastN),
+      goalN: Object.assign({}, state.goalN),
+      obsData: Object.assign({}, state.obsData),
+      planExtras: JSON.parse(JSON.stringify(state.planExtras)),
+      lastDate: state.lastDate,
+      goalDate: state.goalDate,
+    };
+  }
+
+  function populate(data) {
+    if (!data || typeof data !== "object") return;
+    function assign(t, s) { if (s && typeof s === "object") Object.assign(t, s); }
+    assign(state.lastH, data.lastH);
+    assign(state.goalH, data.goalH);
+    assign(state.lastN, data.lastN);
+    assign(state.goalN, data.goalN);
+    assign(state.obsData, data.obsData);
+    if (data.planExtras) state.planExtras = data.planExtras;
+    if (data.lastDate) { state.lastDate = data.lastDate; var e = document.getElementById("lastDate"); if(e) e.value = data.lastDate; }
+    if (data.goalDate) { state.goalDate = data.goalDate; var e2 = document.getElementById("goalDate"); if(e2) e2.value = data.goalDate; }
+    renderGrid("grid-last", state.lastH, state.lastN, function(k,v){state.lastH[k]=v;updateAll();}, function(k,v){state.lastN[k]=v;renderPrintLayout();});
+    renderGrid("grid-goal", state.goalH, state.goalN, function(k,v){state.goalH[k]=v;updateAll();}, function(k,v){state.goalN[k]=v;renderPrintLayout();});
+    renderObsPanel();
+    renderActionPlan();
+    onDateChange();
+    initPie("pie-last", state.lastH);
+    initPie("pie-goal", state.goalH);
+    updateAll();
+  }
+
+  window.addEventListener("load", function() {
+    WorkbookStorage.init("audit", collect, populate);
+  });
+})();
+</script>
+
+</body>
+</html>

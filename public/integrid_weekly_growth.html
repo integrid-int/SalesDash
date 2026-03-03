@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Integrid — Weekly Growth Workbook</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Syne', system-ui, sans-serif;
+  background: linear-gradient(150deg, #F0F6FF 0%, #EEF2FF 50%, #F5F3FF 100%);
+  min-height: 100vh;
+  padding: 24px 20px 60px;
+  color: #1E293B;
+}
+input, textarea, select { font-family: inherit; }
+::placeholder { color: #CBD5E1; }
+textarea { resize: vertical; }
+
+/* ── LAYOUT ── */
+.app { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+/* ── TOP BAR ── */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px;
+}
+.topbar-left h1 { font-size: 26px; font-weight: 800; color: #1E3A5F; letter-spacing: -0.02em; }
+.topbar-left p { font-size: 12px; color: #64748B; margin-top: 3px; }
+.pdf-btn {
+  display: flex; align-items: center; gap: 9px;
+  background: linear-gradient(135deg, #1E3A5F, #2563EB);
+  color: white; border: none; border-radius: 10px;
+  padding: 11px 20px; cursor: pointer;
+  font-size: 13px; font-weight: 800; font-family: inherit;
+  box-shadow: 0 4px 16px rgba(37,99,235,0.32);
+  transition: transform 0.1s;
+}
+.pdf-btn:active { transform: scale(0.97); }
+
+/* ── TAB NAV ── */
+.tab-nav {
+  display: flex; gap: 0;
+  background: white; border-radius: 12px;
+  border: 1px solid #E2E8F0;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+.tab-btn {
+  flex: 1; border: none; background: transparent; cursor: pointer;
+  padding: 13px 10px; font-family: inherit;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.07em;
+  text-transform: uppercase; color: #94A3B8;
+  border-right: 1px solid #E2E8F0;
+  transition: background 0.15s, color 0.15s;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.tab-btn:last-child { border-right: none; }
+.tab-btn .tab-num { font-size: 9px; color: #CBD5E1; letter-spacing: 0.15em; }
+.tab-btn.active {
+  background: #EFF6FF; color: #2563EB;
+  box-shadow: inset 0 -2px 0 #2563EB;
+}
+.tab-btn.active .tab-num { color: #93C5FD; }
+.tab-btn:hover:not(.active) { background: #F8FAFC; color: #64748B; }
+
+/* ── PAGE ── */
+.page { display: none; flex-direction: column; gap: 18px; }
+.page.active { display: flex; }
+
+/* ── CARD ── */
+.card {
+  background: white; border-radius: 14px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+.card-header {
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid #E2E8F0;
+  display: flex; align-items: center; gap: 10px;
+}
+.card-header-stripe {
+  width: 4px; height: 22px; border-radius: 2px; flex-shrink: 0;
+}
+.card-header h2 {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: #94A3B8; flex: 1;
+}
+.card-purpose {
+  font-size: 11px; color: #64748B; font-weight: 400;
+  font-style: italic; max-width: 500px; text-align: right;
+}
+.card-body { padding: 20px; }
+
+/* ── PAGE HEADER ── */
+.page-header-band {
+  border-radius: 14px; overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+.page-header-inner {
+  padding: 22px 26px 18px;
+  display: flex; justify-content: space-between; align-items: flex-start;
+  flex-wrap: wrap; gap: 12px;
+}
+.page-header-inner .ph-left .ph-eyebrow {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.2em;
+  text-transform: uppercase; color: rgba(255,255,255,0.55); margin-bottom: 4px;
+}
+.page-header-inner .ph-left .ph-title {
+  font-size: 22px; font-weight: 800; color: white; letter-spacing: -0.01em;
+}
+.page-header-inner .ph-right {
+  background: rgba(255,255,255,0.1); border-radius: 10px;
+  padding: 10px 16px; border: 1px solid rgba(255,255,255,0.15);
+}
+.page-header-inner .ph-right .ph-purpose-lbl {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.15em;
+  text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 3px;
+}
+.page-header-inner .ph-right .ph-purpose-txt {
+  font-size: 12px; color: rgba(255,255,255,0.85); font-weight: 400;
+  line-height: 1.5; max-width: 340px;
+}
+
+/* ── FIELD COMPONENTS ── */
+.field { margin-bottom: 16px; }
+.field:last-child { margin-bottom: 0; }
+.field label {
+  display: block; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: #64748B; margin-bottom: 7px;
+}
+.field input[type=text],
+.field input[type=date],
+.field textarea {
+  width: 100%; border: 1.5px solid #E2E8F0; border-radius: 8px;
+  padding: 9px 12px; font-size: 13px; color: #1E293B;
+  background: #FAFBFC; outline: none; transition: border-color 0.15s, background 0.15s;
+  line-height: 1.5;
+}
+.field input[type=text]:focus,
+.field input[type=date]:focus,
+.field textarea:focus { border-color: #2563EB; background: white; }
+
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.field-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+/* ── SECTION DIVIDER ── */
+.section-divider {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.15em;
+  text-transform: uppercase; color: #94A3B8;
+  padding: 0 0 10px; margin-bottom: 16px;
+  border-bottom: 1px solid #E2E8F0;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-divider::after { content: ''; flex: 1; height: 1px; background: #E2E8F0; display: none; }
+
+/* ── WHY LADDER ── */
+.ladder { display: flex; flex-direction: column; gap: 8px; }
+.ladder-item {
+  display: grid; grid-template-columns: 28px 1fr;
+  gap: 10px; align-items: start;
+}
+.ladder-num {
+  width: 28px; height: 28px; border-radius: 7px;
+  background: #EFF6FF; border: 1px solid #BFDBFE;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800; color: #2563EB;
+  flex-shrink: 0; margin-top: 2px;
+}
+.ladder-item input {
+  width: 100%; border: 1.5px solid #E2E8F0; border-radius: 8px;
+  padding: 8px 12px; font-size: 13px; color: #1E293B;
+  background: #FAFBFC; outline: none; font-family: inherit;
+  transition: border-color 0.15s, background 0.15s;
+}
+.ladder-item input:focus { border-color: #2563EB; background: white; }
+
+/* ── CHOOSE BOX ── */
+.choose-box {
+  background: #EFF6FF; border: 1.5px solid #BFDBFE;
+  border-radius: 10px; padding: 14px 16px;
+}
+.choose-prefix {
+  font-size: 12px; font-weight: 700; color: #2563EB;
+  margin-bottom: 8px; letter-spacing: 0.02em;
+}
+.choose-box textarea {
+  width: 100%; border: 1.5px solid #BFDBFE; border-radius: 7px;
+  padding: 9px 12px; font-size: 13px; color: #1E293B;
+  background: white; outline: none; font-family: inherit;
+  transition: border-color 0.15s; line-height: 1.5;
+}
+.choose-box textarea:focus { border-color: #2563EB; }
+
+/* ── COST TABLE ── */
+.cost-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
+}
+.cost-card {
+  border-radius: 10px; padding: 12px 14px; border: 1.5px solid;
+}
+.cost-card.lose  { background: #FFF7ED; border-color: #FED7AA; }
+.cost-card.regret { background: #FEF2F2; border-color: #FECACA; }
+.cost-card.harder { background: #FFFBEB; border-color: #FDE68A; }
+.cost-card-lbl {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; margin-bottom: 7px;
+}
+.cost-card.lose .cost-card-lbl   { color: #EA580C; }
+.cost-card.regret .cost-card-lbl { color: #DC2626; }
+.cost-card.harder .cost-card-lbl { color: #D97706; }
+.cost-card textarea {
+  width: 100%; border: none; background: transparent;
+  font-size: 12px; color: #374151; outline: none;
+  font-family: inherit; line-height: 1.5;
+}
+
+/* ── SENSORY GRID ── */
+.sensory-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.sense-card {
+  border-radius: 10px; padding: 12px 14px; border: 1.5px solid;
+}
+.sense-card.see   { background: #EFF6FF; border-color: #BFDBFE; }
+.sense-card.hear  { background: #F0FDF4; border-color: #A7F3D0; }
+.sense-card.feel  { background: #F5F3FF; border-color: #DDD6FE; }
+.sense-card-lbl {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; margin-bottom: 7px;
+}
+.sense-card.see .sense-card-lbl  { color: #2563EB; }
+.sense-card.hear .sense-card-lbl { color: #059669; }
+.sense-card.feel .sense-card-lbl { color: #7C3AED; }
+.sense-card textarea {
+  width: 100%; border: none; background: transparent;
+  font-size: 12px; color: #374151; outline: none;
+  font-family: inherit; line-height: 1.5;
+}
+
+/* ── PROOF GRID ── */
+.proof-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.proof-card {
+  border-radius: 10px; padding: 12px 14px;
+  background: #F8FAFC; border: 1.5px solid #E2E8F0;
+}
+.proof-card-lbl {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: #64748B; margin-bottom: 7px;
+}
+.proof-card textarea {
+  width: 100%; border: none; background: transparent;
+  font-size: 12px; color: #374151; outline: none;
+  font-family: inherit; line-height: 1.5;
+}
+
+/* ── BELIEFS TABLE ── */
+.beliefs-table {
+  border-radius: 10px; overflow: hidden;
+  border: 1.5px solid #E2E8F0;
+}
+.beliefs-head {
+  display: grid; grid-template-columns: 1fr 1fr;
+  background: #1E3A5F; padding: 8px 14px;
+}
+.beliefs-head span {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: rgba(255,255,255,0.7);
+}
+.belief-row {
+  display: grid; grid-template-columns: 1fr 1fr;
+  border-top: 1px solid #E2E8F0;
+}
+.belief-row:first-of-type { border-top: none; }
+.belief-cell {
+  padding: 4px 6px; border-right: 1px solid #E2E8F0;
+  display: flex; align-items: center; gap: 8px;
+}
+.belief-cell:last-child { border-right: none; }
+.belief-num {
+  width: 22px; height: 22px; border-radius: 5px;
+  background: #EFF6FF; border: 1px solid #BFDBFE;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; color: #2563EB; flex-shrink: 0;
+}
+.belief-cell input {
+  flex: 1; border: none; background: transparent;
+  font-size: 12px; color: #1E293B; outline: none;
+  font-family: inherit; padding: 6px 4px;
+}
+
+/* ── REPLACEMENT BELIEFS ── */
+.replace-grid { display: flex; flex-direction: column; gap: 8px; }
+.replace-row {
+  display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center;
+}
+.replace-badge {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+  color: #059669; background: #F0FDF4; border: 1px solid #A7F3D0;
+  border-radius: 6px; padding: 5px 9px; white-space: nowrap;
+}
+.replace-row input {
+  width: 100%; border: 1.5px solid #E2E8F0; border-radius: 8px;
+  padding: 8px 12px; font-size: 13px; color: #1E293B;
+  background: #FAFBFC; outline: none; font-family: inherit;
+  transition: border-color 0.15s, background 0.15s;
+}
+.replace-row input:focus { border-color: #059669; background: white; }
+
+/* ── HABIT CARDS ── */
+.habit-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.habit-card { border-radius: 10px; padding: 14px 16px; border: 1.5px solid; }
+.habit-card.stop  { background: #FEF2F2; border-color: #FECACA; }
+.habit-card.start { background: #F0FDF4; border-color: #A7F3D0; }
+.habit-card-header {
+  display: flex; align-items: center; gap: 7px; margin-bottom: 12px;
+}
+.habit-card-icon {
+  font-size: 16px;
+}
+.habit-card-title {
+  font-size: 11px; font-weight: 800; letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.habit-card.stop .habit-card-title  { color: #DC2626; }
+.habit-card.start .habit-card-title { color: #059669; }
+.habit-card .field label { font-size: 10px; }
+.habit-card .field input { background: white; }
+.habit-card.stop .field input:focus   { border-color: #DC2626; }
+.habit-card.start .field input:focus  { border-color: #059669; }
+
+/* ── WEEKLY RULE ── */
+.rule-box {
+  background: linear-gradient(135deg, #1E3A5F, #2563EB);
+  border-radius: 12px; padding: 18px 20px;
+}
+.rule-box-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.15em;
+  text-transform: uppercase; color: rgba(255,255,255,0.55); margin-bottom: 10px;
+}
+.rule-box textarea {
+  width: 100%; border: 1.5px solid rgba(255,255,255,0.2); border-radius: 8px;
+  padding: 10px 14px; font-size: 14px; font-weight: 600; color: white;
+  background: rgba(255,255,255,0.1); outline: none; font-family: inherit;
+  line-height: 1.5; transition: border-color 0.15s, background 0.15s;
+}
+.rule-box textarea::placeholder { color: rgba(255,255,255,0.35); }
+.rule-box textarea:focus { border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.15); }
+
+/* ── TRACKER TABLE ── */
+.tracker-outer {
+  border-radius: 10px; overflow: hidden; border: 1.5px solid #E2E8F0;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.tracker-head {
+  display: grid; grid-template-columns: 2fr repeat(7, 1fr);
+  background: #1E3A5F;
+}
+.tracker-head-cell {
+  padding: 9px 8px; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: rgba(255,255,255,0.7); text-align: center;
+}
+.tracker-head-cell:first-child { text-align: left; padding-left: 14px; }
+.tracker-body { }
+.tracker-row {
+  display: grid; grid-template-columns: 2fr repeat(7, 1fr);
+  border-bottom: 1px solid #EDF2F7;
+}
+.tracker-row:last-child { border-bottom: none; }
+.tracker-row.even { background: white; }
+.tracker-row.odd  { background: #FAFBFC; }
+.tracker-label-cell { padding: 0 6px 0 14px; display: flex; align-items: center; }
+.tracker-label-cell input {
+  width: 100%; border: none; background: transparent;
+  font-size: 12px; color: #374151; outline: none;
+  font-family: inherit; padding: 8px 4px;
+}
+.tracker-day-cell { display: flex; align-items: center; justify-content: center; padding: 4px 3px; }
+.tracker-day-cell input[type=text] {
+  width: 100%; border: 1px solid #E2E8F0; border-radius: 5px;
+  background: #F8FAFC; font-size: 11px; font-weight: 600; color: #1E293B;
+  outline: none; text-align: center; font-family: inherit;
+  padding: 6px 2px; transition: border-color 0.12s, background 0.12s;
+}
+.tracker-day-cell input[type=text]:focus { border-color: #2563EB; background: white; }
+.tracker-add-row { border-top: 1px solid #E2E8F0; }
+.tracker-add-btn {
+  width: 100%; border: none; background: #F8FAFC; cursor: pointer;
+  padding: 11px 14px; font-family: inherit;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: #94A3B8;
+  display: flex; align-items: center; gap: 8px;
+  transition: background 0.12s, color 0.12s;
+}
+.tracker-add-btn:hover { background: #EFF6FF; color: #2563EB; }
+.tracker-tip {
+  font-size: 11px; color: #94A3B8; margin-top: 10px;
+  line-height: 1.5; font-style: italic;
+}
+
+/* ── VISUALIZATION SCRIPT ── */
+.script-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.script-card { border-radius: 10px; border: 1.5px solid; padding: 14px 16px; }
+.script-card.quick { background: #FFFBEB; border-color: #FDE68A; }
+.script-card.full  { background: #F5F3FF; border-color: #DDD6FE; }
+.script-card-title {
+  font-size: 11px; font-weight: 800; letter-spacing: 0.1em;
+  text-transform: uppercase; margin-bottom: 4px;
+}
+.script-card.quick .script-card-title { color: #D97706; }
+.script-card.full .script-card-title  { color: #7C3AED; }
+.script-card-hint {
+  font-size: 11px; color: #94A3B8; margin-bottom: 10px; font-weight: 400;
+}
+.script-card textarea {
+  width: 100%; border: 1.5px solid;
+  border-radius: 7px; padding: 9px 12px;
+  font-size: 12px; color: #374151; outline: none;
+  font-family: inherit; line-height: 1.6;
+  background: white; transition: border-color 0.15s;
+}
+.script-card.quick textarea { border-color: #FDE68A; }
+.script-card.quick textarea:focus { border-color: #D97706; }
+.script-card.full textarea  { border-color: #DDD6FE; }
+.script-card.full textarea:focus  { border-color: #7C3AED; }
+
+/* ── PROGRESS BAR ── */
+.progress-wrap {
+  background: white; border-radius: 10px; border: 1px solid #E2E8F0;
+  padding: 14px 18px;
+  display: flex; align-items: center; gap: 16px;
+}
+.progress-label { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #94A3B8; white-space: nowrap; }
+.progress-bar { flex: 1; height: 6px; background: #E2E8F0; border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #2563EB, #06B6D4); border-radius: 3px; transition: width 0.4s ease; }
+.progress-pct { font-size: 13px; font-weight: 800; color: #2563EB; min-width: 36px; text-align: right; }
+
+/* ── PRINT ── */
+.print-only { display: none; }
+@media print {
+  @page { size: letter; margin: 0.5in; }
+  body { background: white !important; padding: 0; }
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  .tab-nav { display: none !important; }
+  .page { display: flex !important; page-break-after: always; }
+  .page:last-of-type { page-break-after: avoid; }
+  .page-header-band { box-shadow: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="app no-print">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>Weekly Growth Workbook</h1>
+      <p>Complete all three sections · Tab between pages · Save as PDF when done</p>
+    </div>
+    <button class="pdf-btn" onclick="window.print()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M6 9l6 6 6-6M3 19h18"/></svg>
+      Save as PDF
+    </button>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-wrap no-print">
+    <span class="progress-label">Completion</span>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <span class="progress-pct" id="progressPct">0%</span>
+  </div>
+
+  <!-- TABS -->
+  <div class="tab-nav no-print">
+    <button class="tab-btn active" onclick="showPage(0,this)">
+      <span class="tab-num">Page 01</span>Your Why
+    </button>
+    <button class="tab-btn" onclick="showPage(1,this)">
+      <span class="tab-num">Page 02</span>Visualization
+    </button>
+    <button class="tab-btn" onclick="showPage(2,this)">
+      <span class="tab-num">Page 03</span>Change & Habits
+    </button>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- PAGE 1 — YOUR WHY                                   -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="page active" id="page-0">
+
+    <div class="page-header-band">
+      <div class="page-header-inner" style="background:linear-gradient(135deg,#1E3A5F,#2563EB)">
+        <div class="ph-left">
+          <div class="ph-eyebrow">Page 1 of 3 · Integrid · Weekly Growth Workbook</div>
+          <div class="ph-title">Your Why Workbook</div>
+        </div>
+        <div class="ph-right">
+          <div class="ph-purpose-lbl">Purpose</div>
+          <div class="ph-purpose-txt">Define a strong, emotionally anchored WHY tied to a clear 12-month outcome. Clarify what you want, why it matters, and what you choose.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANCHOR OUTCOME -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-stripe" style="background:linear-gradient(180deg,#2563EB,#06B6D4)"></div>
+        <h2>Anchor Outcome</h2>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <label>12-Month Outcome</label>
+          <input type="text" placeholder="What is the one result you're committed to achieving in the next 12 months?" id="w1_outcome" oninput="updateProgress()">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Target Date</label>
+            <input type="date" id="w1_date" oninput="updateProgress()">
+          </div>
+          <div class="field">
+            <label>Success Metric</label>
+            <input type="text" placeholder="How will you know you've succeeded? (specific, measurable)" id="w1_metric" oninput="updateProgress()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WHY THIS MATTERS -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-stripe" style="background:linear-gradient(180deg,#EA580C,#F59E0B)"></div>
+        <h2>Why This Matters</h2>
+      </div>
+      <div class="card-body">
+        <div class="field-row-3">
+          <div class="field">
+            <label>Personal Reason</label>
+            <textarea rows="3" placeholder="What does this mean for you personally?" id="w1_personal" oninput="updateProgress()"></textarea>
+          </div>
+          <div class="field">
+            <label>Professional Reason</label>
+            <textarea rows="3" placeholder="What does this mean for your career / business?" id="w1_professional" oninput="updateProgress()"></textarea>
+          </div>
+          <div class="field">
+            <label>Financial Reason</label>
+            <textarea rows="3" placeholder="What does this mean for your financial future?" id="w1_financial" oninput="updateProgress()"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- THE WHY LADDER -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-stripe" style="background:linear-gradient(180deg,#7C3AED,#2563EB)"></div>
+        <h2>The Why Ladder</h2>
+        <span class="card-purpose">Start with your anchor outcome. Ask "Why does this matter?" seven times.</span>
+      </div>
+      <div class="card-body">
+        <div class="ladder">
+          <div class="ladder-item"><div class="ladder-num">1</div><input type="text" placeholder="Why does this matter?" id="w1_why1" oninput="updateProgress()"></div>
+          <div class="ladder-item"><div class="ladder-num">2</div><input type="text" placeholder="Why does this matter?" id="w1_why2" oninput="updateProgress()"></div>
+          <div class="ladder-item"><div class="ladder-num">3</div><input type="text" placeholder="Why does this matter?" id="w1_why3" oninput="updateProgress()"></div>
+          <div class="ladder-item"><div class="ladder-num">4</div><input type="text" placeholder="Why does this matter?" id="w1_why4" oninput="updateProgress()"></div>
+          <div class="ladder-item"><div class="ladder-num">5</div><input type="text" placeholder="Why does this matter?" id="w1_why5" oninput="updateProgress()"></div>
+          <div class="ladder-item"><div class="ladder-num">6</div><input type="text" placeholder="Why does this matter?" id="w1_why6" oninput="updateProgress()"></div>
+          <div class="ladder-item"><div class="ladder-num">7</div><input type="text" placeholder="Why does this matter?" id="w1_why7" oninput="updateProgress()"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- THEREFORE I CHOOSE -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-stripe" style="background:linear-gradient(180deg,#059669,#10B981)"></div>
+        <h2>Therefore I Choose</h2>
+      </div>
+      <div class="card-body">
+        <div class="choose-box">
+          <div class="choose-prefix">I choose to ...</div>
+          <textarea rows="2" placeholder="Write your commitment statement here — because..." id="w1_choose" oninput="updateProgress()"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- COST OF INACTION -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-stripe" style="background:linear-gradient(180deg,#DC2626,#F59E0B)"></div>
+        <h2>Cost of Inaction</h2>
+        <span class="card-purpose">What happens if nothing changes?</span>
+      </div>
+      <div class="card-body">
+        <div class="cost-grid">
+          <div class="cost-card lose">
+            <div class="cost-card-lbl">What I Lose</div>
+            <textarea rows="4" placeholder="Opportunities, relationships, time..." id="w1_lose" oninput="updateProgress()"></textarea>
+          </div>
+          <div class="cost-card regret">
+            <div class="cost-card-lbl">What I Regret</div>
+            <textarea rows="4" placeholder="Looking back in 5 years..." id="w1_regret" oninput="updateProgress()"></textarea>
+          </div>
+          <div class="cost-card harder">
+            <div class="cost-card-lbl">What Gets Harder</div>
+            <textarea rows="4" placeholder="Problems that compound over time..." id="w1_harder" oninput="updateProgress()"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;" class="no-print">
+      <button class="pdf-btn" onclick="showPage(1, document.querySelectorAll('.tab-btn')[1])" style="background:linear-gradient(135deg,#2563EB,#06B6D4)">
+        Next: Visualization
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- PAGE 2 — VISUALIZATION                              -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="page" id="page-1">
+
+    <div class="page-header-band">
+      <div class="page-header-inner" style="background:linear-gradient(135deg,#2563EB,#7C3AED)">
+        <div class="ph-left">
+          <div class="ph-eyebrow">Page 2 of 3 · Integrid · Weekly Growth Workbook</div>
+          <div class="ph-title">Your Visualization Workbook</div>
+        </div>
+        <div class="ph-right">
+          <div class="ph-purpose-lbl">Purpose</div>
+          <div class="ph-purpose-txt">Build a vivid mental picture of your achieved goal. Script a repeatable visualization you can run daily to keep your outcome real and compelling.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACHIEVEMENT SCENE -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-stripe" style="background:linear-gradient(180deg,#2563EB,#7C3AED)"></div>
+        <h2>The Achievement Scene</h2>
+        <span class="card-purpose">Describe the exact moment you know you have succeeded.</span>
+      </div>
+      <div class="card-body">
+        <div class="field-row">
+          <div class="field">
+            <label>Date</label>
+            <input type="date" id="w2_scene_date" oninput="updateProgress()">
+          </div>
+          <div class="field">
+            <label>Location</label>
+            <input type="text" placeholder="Where are you when this happens?" id="w2_location" oninput="updateProgress()">
+          </div>
+        </div>
+        <div class="field">
+          <label>Who Is Present</label>
+          <input type="text" placeholder="Who is with you or sees this moment?" id="w2_who" oninput="updateProgress()">
+        </div>
+        <div class="field">
+          <label>What Success Looks Like</label>
+          <textarea rows="3" placeholder="Describe the scene in full detail — what is happening around you?" id="w2_looks_like" oninput="updateProgress()"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- SENSORY DETAIL -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-stripe" style="background:linear-gradient(180deg,#059669,#06B6D4)"></div>
+        <h2>Sensory Detail</h2>
+        <span class="card-purpose">Make the scene vivid by adding detail to each sense.</span>
+      </div>
+      <div class="card-body">
+        <div class="sensory-grid">
+          <div class="sense-card see">
+            <div class="sense-card-lbl">👁 What I See</div>
+            <textarea rows="5" placeholder="Colors, faces, numbers, spaces, objects..." id="w2_see" oninput="updateProgress()"></textarea>
+          </div>
+          <div class="sense-card hear">
+            <div class="sense-card-lbl">👂 What I Hear</div>
+            <textarea rows="5" placeholder="Words, reactions, sounds, silence..." id="w2_hear" oninput="updateProgress()"></textarea>
+          </div>
+          <div class="sense-card feel">
+            <div class="sense-card-lbl">✋ What I Feel</div>
+            <textarea rows="5" placeholder="Emotions, body sensations, energy..." id="w2_feel" oninput="updateProgress()"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOMENT OF PROOF -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-stripe" style="background:linear-gradient(180deg,#F59E0B,#EA580C)"></div>
+        <h2>The Moment of Proof</h2>
+        <span class="card-purpose">Describe your immediate reactions when you achieve this goal.</span>
+      </div>
+      <div class="card-body">
+        <div class="proof-grid">
+          <div class="proof-card">
+            <div class="proof-card-lbl">💬 What I Say to Myself</div>
+            <textarea rows="4" placeholder="Your first inner thought..." id="w2_say" oninput="updateProgress()"></textarea>
+          </div>
+          <div class="proof-card">
+            <div class="proof-card-lbl">⚡ What I Do Immediately</div>
+            <textarea rows="4" placeholder="First action you take..." id="w2_do" oninput="updateProgress()"></textarea>
+          </div>
+          <div class="proof-card">
+            <div class="proof-card-lbl">🔄 What I Do Differently That Week</div>
+            <textarea rows="4" placeholder="How your behavior changes..." id="w2_different" oninput="updateProgress()"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VISUALIZATION SCRIPTS -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-stripe" style="background:linear-gradient(180deg,#D97706,#7C3AED)"></div>
+        <h2>Repeatable Visualization Script</h2>
+      </div>
+      <div class="card-body">
+        <div class="script-pair">
+          <div class="script-card quick">
+            <div class="script-card-title">⚡ 60-Second Version</div>
+            <div class="script-card-hint">Key images and feelings to recall quickly each morning.</div>
+            <textarea rows="7" placeholder="Write the compressed version — the 3-5 images and feelings that instantly put you in the scene..." id="w2_script60" oninput="updateProgress()"></textarea>
+          </div>
+          <div class="script-card full">
+            <div class="script-card-title">🎬 3-Minute Version</div>
+            <div class="script-card-hint">The full scene from start to finish with all sensory detail.</div>
+            <textarea rows="7" placeholder="Write the complete visualization script — from the moment it begins to the moment you step away from the scene..." id="w2_script3min" oninput="updateProgress()"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;" class="no-print">
+      <button class="pdf-btn" onclick="showPage(0, document.querySelectorAll('.tab-btn')[0])" style="background:rgba(30,58,95,0.8);box-shadow:none">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transform:scaleX(-1)"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Back
+      </button>
+      <button class="pdf-btn" onclick="showPage(2, document.querySelectorAll('.tab-btn')[2])" style="background:linear-gradient(135deg,#7C3AED,#2563EB)">
+        Next: Change &amp; Habits
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- PAGE 3 — CHANGE & HABITS                            -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="page" id="page-2">
+
+    <div class="page-header-band">
+      <div class="page-header-inner" style="background:linear-gradient(135deg,#7C3AED,#DC2626)">
+        <div class="ph-left">
+          <div class="ph-eyebrow">Page 3 of 3 · Integrid · Weekly Growth Workbook</div>
+          <div class="ph-title">Your Change Workbook</div>
+        </div>
+        <div class="ph-right">
+          <div class="ph-purpose-lbl">Purpose</div>
+          <div class="ph-purpose-txt">Identify the beliefs and habits holding you back, define replacements, and commit to one rule for the next seven days.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BELIEFS THAT DON'T SERVE ME -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-stripe" style="background:linear-gradient(180deg,#DC2626,#EA580C)"></div>
+        <h2>Beliefs That Don't Serve Me</h2>
+        <span class="card-purpose">Write three limiting beliefs and the cost each one carries.</span>
+      </div>
+      <div class="card-body">
+        <div class="beliefs-table">
+          <div class="beliefs-head">
+            <span>Limiting Belief</span>
+            <span>Cost of This Belief</span>
+          </div>
+          <div class="belief-row even">
+            <div class="belief-cell"><div class="belief-num">1</div><input type="text" placeholder="I believe that..." id="w3_b1" oninput="updateProgress()"></div>
+            <div class="belief-cell"><input type="text" placeholder="This costs me..." id="w3_b1c" oninput="updateProgress()"></div>
+          </div>
+          <div class="belief-row odd" style="background:#FAFBFC">
+            <div class="belief-cell"><div class="belief-num">2</div><input type="text" placeholder="I believe that..." id="w3_b2" oninput="updateProgress()"></div>
+            <div class="belief-cell"><input type="text" placeholder="This costs me..." id="w3_b2c" oninput="updateProgress()"></div>
+          </div>
+          <div class="belief-row even">
+            <div class="belief-cell"><div class="belief-num">3</div><input type="text" placeholder="I believe that..." id="w3_b3" oninput="updateProgress()"></div>
+            <div class="belief-cell"><input type="text" placeholder="This costs me..." id="w3_b3c" oninput="updateProgress()"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPLACEMENT BELIEFS -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-stripe" style="background:linear-gradient(180deg,#059669,#10B981)"></div>
+        <h2>Replacement Beliefs</h2>
+        <span class="card-purpose">For each limiting belief above, write one new belief to replace it.</span>
+      </div>
+      <div class="card-body">
+        <div class="replace-grid">
+          <div class="replace-row"><span class="replace-badge">Replace 1</span><input type="text" placeholder="The new belief I choose instead..." id="w3_r1" oninput="updateProgress()"></div>
+          <div class="replace-row"><span class="replace-badge">Replace 2</span><input type="text" placeholder="The new belief I choose instead..." id="w3_r2" oninput="updateProgress()"></div>
+          <div class="replace-row"><span class="replace-badge">Replace 3</span><input type="text" placeholder="The new belief I choose instead..." id="w3_r3" oninput="updateProgress()"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HABITS -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-stripe" style="background:linear-gradient(180deg,#DC2626,#059669)"></div>
+        <h2>Habit to Stop &amp; Habit to Start</h2>
+      </div>
+      <div class="card-body">
+        <div class="habit-pair">
+          <div class="habit-card stop">
+            <div class="habit-card-header">
+              <span class="habit-card-icon">🚫</span>
+              <span class="habit-card-title">Habit to Stop</span>
+            </div>
+            <div class="field">
+              <label>Habit I Will Stop</label>
+              <input type="text" placeholder="The specific behavior I will eliminate..." id="w3_hstop" oninput="updateProgress()">
+            </div>
+            <div class="field">
+              <label>When It Tends to Happen</label>
+              <input type="text" placeholder="Trigger / time / context..." id="w3_htrigger" oninput="updateProgress()">
+            </div>
+          </div>
+          <div class="habit-card start">
+            <div class="habit-card-header">
+              <span class="habit-card-icon">✅</span>
+              <span class="habit-card-title">Habit to Start</span>
+            </div>
+            <div class="field">
+              <label>Habit I Will Start</label>
+              <input type="text" placeholder="The specific behavior I will add..." id="w3_hstart" oninput="updateProgress()">
+            </div>
+            <div class="field">
+              <label>How I Will Make It Easy</label>
+              <input type="text" placeholder="Remove friction, stack with existing routine..." id="w3_heasy" oninput="updateProgress()">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WEEKLY RULE -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-stripe" style="background:linear-gradient(180deg,#1E3A5F,#2563EB)"></div>
+        <h2>Weekly Rule</h2>
+        <span class="card-purpose">Write one non-negotiable rule you will follow for the next 7 days.</span>
+      </div>
+      <div class="card-body">
+        <div class="rule-box">
+          <div class="rule-box-label">My Non-Negotiable Rule This Week</div>
+          <textarea rows="2" placeholder="This week I will always / never ..." id="w3_rule" oninput="updateProgress()"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRACKING -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-stripe" style="background:linear-gradient(180deg,#2563EB,#06B6D4)"></div>
+        <h2>Daily Tracking</h2>
+        <span class="card-purpose">Track daily completion. Use ✓ / ✗ for yes/no habits or a number for measurable goals.</span>
+      </div>
+      <div class="card-body">
+        <div class="tracker-outer">
+          <div class="tracker-head">
+            <div class="tracker-head-cell">What I Track</div>
+            <div class="tracker-head-cell">Mon</div>
+            <div class="tracker-head-cell">Tue</div>
+            <div class="tracker-head-cell">Wed</div>
+            <div class="tracker-head-cell">Thu</div>
+            <div class="tracker-head-cell">Fri</div>
+            <div class="tracker-head-cell">Sat</div>
+            <div class="tracker-head-cell">Sun</div>
+          </div>
+          <div class="tracker-body" id="trackerRows">
+            <!-- rows injected by JS -->
+          </div>
+          <div class="tracker-add-row">
+            <button class="tracker-add-btn" onclick="addTrackerRow()">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+              Add row
+            </button>
+          </div>
+        </div>
+        <div class="tracker-tip">Tip: Use ✓ / ✗ for yes/no habits, or a number (e.g. "5/8") for measurable goals. Click any cell to edit.</div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;" class="no-print">
+      <button class="pdf-btn" onclick="showPage(1, document.querySelectorAll('.tab-btn')[1])" style="background:rgba(30,58,95,0.8);box-shadow:none">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transform:scaleX(-1)"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Back
+      </button>
+      <button class="pdf-btn" onclick="window.print()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M6 9l6 6 6-6M3 19h18"/></svg>
+        Save Complete Workbook as PDF
+      </button>
+    </div>
+
+  </div><!-- /page-2 -->
+
+</div><!-- /app -->
+
+<script>
+// ── TAB SWITCHING ─────────────────────────────────────────────────────────────
+function showPage(idx, btn) {
+  document.querySelectorAll('.page').forEach((p, i) => {
+    p.classList.toggle('active', i === idx);
+  });
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', i === idx);
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── TRACKER ROWS ──────────────────────────────────────────────────────────────
+const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const DEFAULT_ROWS = [
+  { label: 'Morning visualization', days: ['','','','','','',''] },
+  { label: 'RGA outbound activity',  days: ['','','','','','',''] },
+  { label: 'No phone before 8 AM',   days: ['','','','','','',''] },
+];
+
+let trackerData = DEFAULT_ROWS.map(r => ({ label: r.label, days: [...r.days] }));
+
+function renderTracker() {
+  const tbody = document.getElementById('trackerRows');
+  tbody.innerHTML = '';
+  trackerData.forEach((row, ri) => {
+    const tr = document.createElement('div');
+    tr.className = 'tracker-row ' + (ri % 2 === 0 ? 'even' : 'odd');
+    // Label cell
+    const lc = document.createElement('div');
+    lc.className = 'tracker-label-cell';
+    const li = document.createElement('input');
+    li.type = 'text'; li.placeholder = 'What I track...';
+    li.value = row.label;
+    li.addEventListener('input', e => { trackerData[ri].label = e.target.value; updateProgress(); });
+    lc.appendChild(li); tr.appendChild(lc);
+    // Day cells
+    for (let di = 0; di < 7; di++) {
+      const dc = document.createElement('div'); dc.className = 'tracker-day-cell';
+      const di2 = document.createElement('input');
+      di2.type = 'text'; di2.placeholder = '—';
+      di2.value = row.days[di];
+      di2.addEventListener('input', e => { trackerData[ri].days[di] = e.target.value; updateProgress(); });
+      dc.appendChild(di2); tr.appendChild(dc);
+    }
+    tbody.appendChild(tr);
+  });
+}
+
+function addTrackerRow() {
+  trackerData.push({ label: '', days: ['','','','','','',''] });
+  renderTracker();
+}
+
+// ── PROGRESS ──────────────────────────────────────────────────────────────────
+function updateProgress() {
+  const fields = document.querySelectorAll('input[type=text], input[type=date], textarea');
+  let filled = 0;
+  fields.forEach(f => { if (f.value.trim()) filled++; });
+  const pct = Math.min(100, Math.round((filled / fields.length) * 100));
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct + '%';
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+renderTracker();
+updateProgress();
+</script>
+
+<script src="workbook-storage.js"></script>
+<script>
+// STORAGE WIRING — Weekly Growth Workbook
+(function () {
+  var statusEl = document.createElement("div");
+  statusEl.id = "saveStatus";
+  statusEl.style.cssText = "font-size:11px;font-weight:700;letter-spacing:0.07em;color:#94A3B8;transition:color 0.3s;align-self:center;";
+  statusEl.textContent = "Connecting...";
+  var topbar = document.querySelector(".topbar");
+  if (topbar) topbar.appendChild(statusEl);
+
+  // Field IDs to save/restore — all inputs + textareas with IDs
+  function collectFields() {
+    var data = {};
+    document.querySelectorAll("input[id], textarea[id]").forEach(function(el) {
+      data[el.id] = el.value;
+    });
+    // Also save tracker rows
+    data["__trackerData"] = JSON.parse(JSON.stringify(trackerData));
+    return data;
+  }
+
+  function populateFields(data) {
+    if (!data || typeof data !== "object") return;
+    // Restore text fields
+    Object.keys(data).forEach(function(id) {
+      if (id === "__trackerData") return;
+      var el = document.getElementById(id);
+      if (el) el.value = data[id];
+    });
+    // Restore tracker
+    if (data["__trackerData"] && Array.isArray(data["__trackerData"])) {
+      trackerData = data["__trackerData"];
+      renderTracker();
+    }
+    updateProgress();
+  }
+
+  window.addEventListener("load", function() {
+    WorkbookStorage.init("growth", collectFields, populateFields);
+  });
+})();
+</script>
+
+</body>
+</html>
