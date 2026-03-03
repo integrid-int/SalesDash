@@ -1,0 +1,104 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "appName": {
+      "type": "string",
+      "defaultValue": "integrid-workbook",
+      "metadata": { "description": "Base name for all resources. Lowercase, hyphens only." }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "allowedValues": ["eastus2","eastus","centralus","westus2","westeurope","uksouth"],
+      "metadata": { "description": "Azure region." }
+    },
+    "githubRepoUrl": {
+      "type": "string",
+      "defaultValue": "https://github.com/integrid-int/SalesDash"
+    },
+    "githubBranch": { "type": "string", "defaultValue": "main" },
+    "githubToken": { "type": "securestring", "defaultValue": "" },
+    "entraClientId": { "type": "string", "defaultValue": "" },
+    "entraClientSecret": { "type": "securestring", "defaultValue": "" }
+  },
+  "variables": {
+    "storageAccountName": "[toLower(concat(replace(take(parameters('appName'),14),'-',''),'stor'))]",
+    "staticWebAppName": "[concat(parameters('appName'),'-swa')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2023-01-01",
+      "name": "[variables('storageAccountName')]",
+      "location": "[parameters('location')]",
+      "sku": { "name": "Standard_LRS" },
+      "kind": "StorageV2",
+      "properties": { "supportsHttpsTrafficOnly": true, "minimumTlsVersion": "TLS1_2", "allowBlobPublicAccess": false }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/tableServices/tables",
+      "apiVersion": "2023-01-01",
+      "name": "[concat(variables('storageAccountName'),'/default/workbookEntries')]",
+      "dependsOn": ["[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/tableServices/tables",
+      "apiVersion": "2023-01-01",
+      "name": "[concat(variables('storageAccountName'),'/default/workbookMeta')]",
+      "dependsOn": ["[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"]
+    },
+    {
+      "type": "Microsoft.Web/staticSites",
+      "apiVersion": "2023-01-01",
+      "name": "[variables('staticWebAppName')]",
+      "location": "[parameters('location')]",
+      "sku": { "name": "Free", "tier": "Free" },
+      "properties": {
+        "repositoryUrl": "[parameters('githubRepoUrl')]",
+        "branch": "[parameters('githubBranch')]",
+        "repositoryToken": "[parameters('githubToken')]",
+        "buildProperties": { "appLocation": "public", "apiLocation": "api", "outputLocation": "" }
+      }
+    },
+    {
+      "type": "Microsoft.Web/staticSites/config",
+      "apiVersion": "2023-01-01",
+      "name": "[concat(variables('staticWebAppName'),'/appsettings')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/staticSites', variables('staticWebAppName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+      ],
+      "properties": {
+        "STORAGE_CONNECTION_STRING": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts',variables('storageAccountName')),'2023-01-01').keys[0].value,';EndpointSuffix=core.windows.net')]",
+        "AAD_CLIENT_ID": "[parameters('entraClientId')]",
+        "AAD_CLIENT_SECRET": "[parameters('entraClientSecret')]"
+      }
+    }
+  ],
+  "outputs": {
+    "staticWebAppUrl": {
+      "type": "string",
+      "value": "[concat('https://',reference(resourceId('Microsoft.Web/staticSites',variables('staticWebAppName'))).defaultHostname)]"
+    },
+    "staticWebAppName": { "type": "string", "value": "[variables('staticWebAppName')]" },
+    "storageAccountName": { "type": "string", "value": "[variables('storageAccountName')]" },
+    "postDeployCommand": {
+      "type": "string",
+      "value": "[concat('pwsh ./deploy/Register-EntraApp.ps1 -SwaName ',variables('staticWebAppName'),' -ResourceGroup ',resourceGroup().name)]"
+    }
+  }
+}
+```
+
+---
+
+**File 2: `deploy/Register-EntraApp.ps1` — add to a `deploy/` folder**
+
+On GitHub: **Add file → Create new file** → type `deploy/Register-EntraApp.ps1` as the filename (GitHub creates the folder automatically) → paste the script from the previous conversation's zip, or let me know and I'll paste it here too.
+
+---
+
+Once both files are committed, your Deploy to Azure button URL will be:
+```
+https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fintegrid-int%2FSalesDash%2Fmain%2Fazuredeploy.json
