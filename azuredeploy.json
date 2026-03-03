@@ -5,22 +5,57 @@
     "appName": {
       "type": "string",
       "defaultValue": "integrid-workbook",
-      "metadata": { "description": "Base name for all resources. Lowercase, hyphens only." }
+      "metadata": {
+        "description": "Base name for all resources. Lowercase letters and hyphens only."
+      }
     },
     "location": {
       "type": "string",
       "defaultValue": "[resourceGroup().location]",
-      "allowedValues": ["eastus2","eastus","centralus","westus2","westeurope","uksouth"],
-      "metadata": { "description": "Azure region." }
+      "allowedValues": [
+        "eastus2",
+        "eastus",
+        "centralus",
+        "westus2",
+        "westeurope",
+        "uksouth"
+      ],
+      "metadata": {
+        "description": "Azure region."
+      }
     },
     "githubRepoUrl": {
       "type": "string",
-      "defaultValue": "https://github.com/integrid-int/SalesDash"
+      "defaultValue": "https://github.com/integrid-int/SalesDash",
+      "metadata": {
+        "description": "GitHub repository URL."
+      }
     },
-    "githubBranch": { "type": "string", "defaultValue": "main" },
-    "githubToken": { "type": "securestring", "defaultValue": "" },
-    "entraClientId": { "type": "string", "defaultValue": "" },
-    "entraClientSecret": { "type": "securestring", "defaultValue": "" }
+    "githubBranch": {
+      "type": "string",
+      "defaultValue": "main"
+    },
+    "githubToken": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "GitHub PAT. Leave blank for public repos."
+      }
+    },
+    "entraClientId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Leave blank - run Register-EntraApp.ps1 post-deploy."
+      }
+    },
+    "entraClientSecret": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Leave blank - run Register-EntraApp.ps1 post-deploy."
+      }
+    }
   },
   "variables": {
     "storageAccountName": "[toLower(concat(replace(take(parameters('appName'),14),'-',''),'stor'))]",
@@ -32,33 +67,56 @@
       "apiVersion": "2023-01-01",
       "name": "[variables('storageAccountName')]",
       "location": "[parameters('location')]",
-      "sku": { "name": "Standard_LRS" },
+      "sku": {
+        "name": "Standard_LRS"
+      },
       "kind": "StorageV2",
-      "properties": { "supportsHttpsTrafficOnly": true, "minimumTlsVersion": "TLS1_2", "allowBlobPublicAccess": false }
+      "properties": {
+        "supportsHttpsTrafficOnly": true,
+        "minimumTlsVersion": "TLS1_2",
+        "allowBlobPublicAccess": false
+      },
+      "tags": {
+        "app": "[parameters('appName')]"
+      }
     },
     {
       "type": "Microsoft.Storage/storageAccounts/tableServices/tables",
       "apiVersion": "2023-01-01",
       "name": "[concat(variables('storageAccountName'),'/default/workbookEntries')]",
-      "dependsOn": ["[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"]
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+      ]
     },
     {
       "type": "Microsoft.Storage/storageAccounts/tableServices/tables",
       "apiVersion": "2023-01-01",
       "name": "[concat(variables('storageAccountName'),'/default/workbookMeta')]",
-      "dependsOn": ["[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"]
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+      ]
     },
     {
       "type": "Microsoft.Web/staticSites",
       "apiVersion": "2023-01-01",
       "name": "[variables('staticWebAppName')]",
       "location": "[parameters('location')]",
-      "sku": { "name": "Free", "tier": "Free" },
+      "sku": {
+        "name": "Free",
+        "tier": "Free"
+      },
       "properties": {
         "repositoryUrl": "[parameters('githubRepoUrl')]",
         "branch": "[parameters('githubBranch')]",
         "repositoryToken": "[parameters('githubToken')]",
-        "buildProperties": { "appLocation": "public", "apiLocation": "api", "outputLocation": "" }
+        "buildProperties": {
+          "appLocation": "public",
+          "apiLocation": "api",
+          "outputLocation": ""
+        }
+      },
+      "tags": {
+        "app": "[parameters('appName')]"
       }
     },
     {
@@ -81,8 +139,14 @@
       "type": "string",
       "value": "[concat('https://',reference(resourceId('Microsoft.Web/staticSites',variables('staticWebAppName'))).defaultHostname)]"
     },
-    "staticWebAppName": { "type": "string", "value": "[variables('staticWebAppName')]" },
-    "storageAccountName": { "type": "string", "value": "[variables('storageAccountName')]" },
+    "staticWebAppName": {
+      "type": "string",
+      "value": "[variables('staticWebAppName')]"
+    },
+    "storageAccountName": {
+      "type": "string",
+      "value": "[variables('storageAccountName')]"
+    },
     "postDeployCommand": {
       "type": "string",
       "value": "[concat('pwsh ./deploy/Register-EntraApp.ps1 -SwaName ',variables('staticWebAppName'),' -ResourceGroup ',resourceGroup().name)]"
