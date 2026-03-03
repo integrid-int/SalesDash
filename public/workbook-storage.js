@@ -2,7 +2,7 @@
  * workbook-storage.js
  * ───────────────────
  * Drop this script into any workbook page. It provides:
- *   Update
+ *
  *   WorkbookStorage.init(workbookKey, collectFn, populateFn)
  *     workbookKey  : "audit" | "growth"
  *     collectFn()  : returns a plain JS object with all current field values
