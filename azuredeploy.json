@@ -89,16 +89,3 @@
     }
   }
 }
-```
-
----
-
-**File 2: `deploy/Register-EntraApp.ps1` — add to a `deploy/` folder**
-
-On GitHub: **Add file → Create new file** → type `deploy/Register-EntraApp.ps1` as the filename (GitHub creates the folder automatically) → paste the script from the previous conversation's zip, or let me know and I'll paste it here too.
-
----
-
-Once both files are committed, your Deploy to Azure button URL will be:
-```
-https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fintegrid-int%2FSalesDash%2Fmain%2Fazuredeploy.json
