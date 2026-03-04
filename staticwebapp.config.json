@@ -22,6 +22,10 @@
       "statusCode": 302
     },
     {
+      "route": "/api/ping",
+      "allowedRoles": ["anonymous"]
+    },
+    {
       "route": "/api/*",
       "allowedRoles": ["authenticated"]
     },
