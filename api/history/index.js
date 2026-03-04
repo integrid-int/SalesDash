@@ -21,8 +21,8 @@ module.exports = async function (context, req) {
   const workbook = req.query.workbook;
   const limit    = Math.min(52, parseInt(req.query.limit || "12", 10));
 
-  if (workbook && !["audit", "growth"].includes(workbook)) {
-    context.res = { status: 400, body: { error: "workbook must be 'audit' or 'growth'" } };
+  if (workbook && !["audit", "growth", "push"].includes(workbook)) {
+    context.res = { status: 400, body: { error: "workbook must be 'audit', 'growth', or 'push'" } };
     return;
   }
 
