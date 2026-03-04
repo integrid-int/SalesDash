@@ -2,7 +2,6 @@
   "name": "integrid-workbook-api",
   "version": "1.0.0",
   "description": "Azure Functions API for Integrid Sales Workbook",
-  "main": "index.js",
   "scripts": {
     "start": "func start",
     "test": "echo \"No tests yet\""

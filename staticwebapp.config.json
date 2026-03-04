@@ -50,6 +50,6 @@
     "exclude": ["/api/*", "/*.html", "/*.js", "/*.css", "/*.json"]
   },
   "platform": {
-    "apiRuntime": "node:22"
+    "apiRuntime": "node:20"
   }
 }
