@@ -446,8 +446,10 @@ textarea { resize: vertical; }
   .print-only { display: block !important; }
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   .tab-nav { display: none !important; }
-  .page { display: flex !important; page-break-after: always; }
-  .page:last-of-type { page-break-after: avoid; }
+  .topbar { display: none !important; }
+  .app { display: flex !important; flex-direction: column; }
+  .page { display: flex !important; flex-direction: column; page-break-after: always; break-after: page; }
+  .page:last-of-type { page-break-after: avoid; break-after: avoid; }
   .page-header-band { box-shadow: none !important; }
 }
 </style>

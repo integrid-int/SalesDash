@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -n \"authLevel\" /c/Users/RyanSchneck/SalesDash/api/*/function.json)",
+      "Bash(grep -n \"\\\\.includes\\(\" /c/Users/RyanSchneck/SalesDash/api/*/index.js)",
+      "Bash(grep -n \"require.*tableClient\\\\|module.exports\" /c/Users/RyanSchneck/SalesDash/api/*/index.js)"
+    ]
+  }
+}
