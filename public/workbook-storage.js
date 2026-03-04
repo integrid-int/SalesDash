@@ -99,7 +99,8 @@ const WorkbookStorage = (() => {
     _workbook   = workbookKey;
     _collectFn  = collectFn;
     _populateFn = populateFn;
-    _isoWeek    = currentISOWeek();
+    const urlWeek = new URLSearchParams(window.location.search).get("week");
+    _isoWeek    = urlWeek || currentISOWeek();
 
     // Attach global listener — catches all inputs/textareas/selects
     document.addEventListener("input", onInput);

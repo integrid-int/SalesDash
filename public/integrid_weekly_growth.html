@@ -454,15 +454,15 @@ textarea { resize: vertical; }
 </head>
 <body>
 
-<div class="app no-print">
+<div class="app">
 
   <!-- TOP BAR -->
-  <div class="topbar">
+  <div class="topbar no-print">
     <div class="topbar-left">
       <h1>Weekly Growth Workbook</h1>
       <p>Complete all three sections · Tab between pages · Save as PDF when done</p>
     </div>
-    <button class="pdf-btn" onclick="window.print()">
+    <button class="pdf-btn" onclick="exportPDF()">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M6 9l6 6 6-6M3 19h18"/></svg>
       Save as PDF
     </button>
@@ -908,7 +908,7 @@ textarea { resize: vertical; }
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transform:scaleX(-1)"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         Back
       </button>
-      <button class="pdf-btn" onclick="window.print()">
+      <button class="pdf-btn" onclick="exportPDF()">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M6 9l6 6 6-6M3 19h18"/></svg>
         Save Complete Workbook as PDF
       </button>
@@ -919,6 +919,13 @@ textarea { resize: vertical; }
 </div><!-- /app -->
 
 <script>
+// ── PRINT / PDF EXPORT ────────────────────────────────────────────────────────
+function exportPDF() {
+  var p = (window.WorkbookStorage && WorkbookStorage.saveNow)
+    ? WorkbookStorage.saveNow() : Promise.resolve();
+  p.then(function() { window.print(); });
+}
+
 // ── TAB SWITCHING ─────────────────────────────────────────────────────────────
 function showPage(idx, btn) {
   document.querySelectorAll('.page').forEach((p, i) => {

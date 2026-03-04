@@ -153,7 +153,7 @@
       <div style="font-size:28px;font-weight:800;color:#1E3A5F;letter-spacing:-0.02em">Time Audit &amp; RGA Redesign</div>
       <div style="font-size:12px;color:#64748B;margin-top:2px">Click any <b>Hours</b> cell to edit — percentages and charts update instantly</div>
     </div>
-    <button class="pdf-btn" onclick="window.print()">
+    <button class="pdf-btn" onclick="exportPDF()">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 15V3M6 9l6 6 6-6M3 19h18"/>
       </svg>
@@ -941,6 +941,12 @@ function init() {
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+function exportPDF() {
+  var p = (window.WorkbookStorage && WorkbookStorage.saveNow)
+    ? WorkbookStorage.saveNow() : Promise.resolve();
+  p.then(function() { window.print(); });
+}
 </script>
 
 <script src="workbook-storage.js"></script>

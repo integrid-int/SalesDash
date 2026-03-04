@@ -246,6 +246,59 @@ nav {
 .skel-sub { display: inline-block; width: 80px; height: 12px; margin-top: 5px; }
 .skel-bar { display: block; width: 100%; height: 6px; margin-top: 8px; }
 
+/* ── HISTORY SECTION ── */
+.hist-wrap {
+  position: relative; z-index: 1;
+  max-width: 1120px; margin: 0 auto;
+  padding: 0 44px 48px;
+}
+.hist-card {
+  background: var(--navy2); border: 1px solid var(--edge);
+  border-radius: 14px; overflow: hidden;
+}
+.hist-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px 12px; border-bottom: 1px solid var(--edge);
+}
+.hist-title { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.hist-tabs { display: flex; gap: 6px; }
+.hist-tab {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 6px; cursor: pointer;
+  background: var(--dim); border: 1px solid var(--edge); color: var(--muted);
+  transition: background .15s, color .15s, border-color .15s;
+}
+.hist-tab.active { background: rgba(37,99,235,.2); color: var(--blue2); border-color: rgba(37,99,235,.3); }
+.hist-list { padding: 8px 0; max-height: 340px; overflow-y: auto; }
+.hist-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: background 0.12s;
+}
+.hist-item:last-child { border-bottom: none; }
+.hist-item:hover { background: rgba(255,255,255,0.03); }
+.hist-icon {
+  width: 28px; height: 28px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; flex-shrink: 0;
+}
+.hist-text { flex: 1; }
+.hist-wk   { font-size: 12px; font-weight: 700; color: var(--text); }
+.hist-sum  { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.hist-right { display: flex; align-items: center; gap: 10px; }
+.hist-time { font-size: 10px; color: var(--muted); white-space: nowrap; }
+.hist-open {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--blue2); background: rgba(37,99,235,.1); border: 1px solid rgba(37,99,235,.2);
+  padding: 4px 9px; border-radius: 6px; cursor: pointer;
+  transition: background .15s, color .15s;
+  white-space: nowrap;
+}
+.hist-open:hover { background: var(--blue); color: white; }
+.hist-empty { padding: 24px 18px; font-size: 12px; color: var(--muted); text-align: center; }
+@media (max-width:768px) { .hist-wrap { padding-left:18px; padding-right:18px; } }
+
 /* ── WORKBOOKS SECTION ── */
 .wbs { position: relative; z-index: 1; max-width: 1120px; margin: 0 auto; padding: 0 44px 100px; }
 .wbs-bar {
@@ -491,6 +544,23 @@ footer {
   </div>
 </div>
 
+<!-- HISTORY -->
+<div class="hist-wrap">
+  <div class="hist-card">
+    <div class="hist-header">
+      <div class="hist-title">History</div>
+      <div class="hist-tabs">
+        <div class="hist-tab active" onclick="filterHistory('all',this)">All</div>
+        <div class="hist-tab" onclick="filterHistory('audit',this)">Time Audit</div>
+        <div class="hist-tab" onclick="filterHistory('growth',this)">Growth</div>
+      </div>
+    </div>
+    <div class="hist-list" id="historyList">
+      <div class="hist-empty">Loading history…</div>
+    </div>
+  </div>
+</div>
+
 <!-- WORKBOOKS GRID -->
 <div class="wbs">
   <div class="wbs-bar">
@@ -621,11 +691,33 @@ function timeSince(iso) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
+// ── DASHBOARD ERROR ───────────────────────────────────────────────────────────
+function showDashboardError(msg) {
+  const dash = msg || "Could not load dashboard data";
+  document.getElementById("dashWeekLabel").textContent = dash;
+  ["dsRga","dsStreak","dsGrowth","dsTotal"].forEach(id => {
+    document.getElementById(id).textContent = "—";
+  });
+  ["dsRgaSub","dsStreakSub","dsGrowthSub","dsTotalSub"].forEach(id => {
+    document.getElementById(id).textContent = "";
+  });
+  document.getElementById("auditRgaVal").textContent = "—";
+  document.getElementById("auditTrend").textContent  = "Data unavailable";
+  document.getElementById("auditBadge").textContent  = "Error";
+  document.getElementById("auditBadge").className    = "dash-card-badge badge-muted";
+  document.getElementById("growthPctVal").textContent = "—";
+  document.getElementById("growthSub").textContent    = "Data unavailable";
+  document.getElementById("growthBadge").textContent  = "Error";
+  document.getElementById("growthBadge").className    = "dash-card-badge badge-muted";
+  document.getElementById("activityList").innerHTML   = '<div class="activity-empty">Could not load activity.</div>';
+}
+
 // ── DASHBOARD LOAD ────────────────────────────────────────────────────────────
 async function loadDashboard() {
   try {
     const res  = await fetch("/api/dashboard");
     if (res.status === 401) { window.location.href = "/login"; return; }
+    if (!res.ok) { showDashboardError(); return; }
     const d    = await res.json();
 
     // Week label
@@ -715,7 +807,7 @@ async function loadDashboard() {
 
   } catch (err) {
     console.error("Dashboard load failed:", err);
-    document.getElementById("dashWeekLabel").textContent = "Could not load data";
+    showDashboardError();
   }
 }
 
@@ -762,9 +854,10 @@ function renderSparkline(svgId, data, colorA, colorB) {
 
 // ── MODAL ─────────────────────────────────────────────────────────────────────
 const ROUTES = { growth: "integrid_weekly_growth.html", audit: "integrid_time_audit.html" };
-function openTool(key, title) {
-  document.getElementById("modalTitle").textContent = title;
-  document.getElementById("modalFrame").src = ROUTES[key];
+function openTool(key, title, week) {
+  document.getElementById("modalTitle").textContent = title + (week ? " · " + week : "");
+  const src = ROUTES[key] + (week ? "?week=" + encodeURIComponent(week) : "");
+  document.getElementById("modalFrame").src = src;
   document.getElementById("modal").classList.add("open");
   document.body.style.overflow = "hidden";
 }
@@ -783,9 +876,63 @@ document.querySelectorAll(".wc[tabindex]").forEach(c => {
   c.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); c.click(); } });
 });
 
+// ── HISTORY ───────────────────────────────────────────────────────────────────
+let _allHistory = [];
+
+async function loadHistory() {
+  try {
+    const res = await fetch("/api/history?limit=26");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    _allHistory = json.entries || [];
+    renderHistory(_allHistory);
+  } catch (err) {
+    console.warn("History load failed:", err);
+    document.getElementById("historyList").innerHTML =
+      '<div class="hist-empty">Could not load history.</div>';
+  }
+}
+
+function renderHistory(entries) {
+  const list = document.getElementById("historyList");
+  if (!entries || entries.length === 0) {
+    list.innerHTML = '<div class="hist-empty">No history yet. Open a workbook to get started.</div>';
+    return;
+  }
+  list.innerHTML = entries.map(e => {
+    const isAudit = e.workbook === "audit";
+    const icon    = isAudit ? "⏱" : "📈";
+    const label   = isAudit ? "Time Audit" : "Weekly Growth";
+    const iconCls = isAudit ? "ai-audit" : "ai-growth";
+    const openFn  = isAudit
+      ? `openTool('audit','Time Audit &amp; RGA Redesign','${e.isoWeek}')`
+      : `openTool('growth','Weekly Growth Workbook','${e.isoWeek}')`;
+    return `
+      <div class="hist-item">
+        <div class="hist-icon ${iconCls}">${icon}</div>
+        <div class="hist-text">
+          <div class="hist-wk">${label} · ${isoWeekLabel(e.isoWeek)}</div>
+          <div class="hist-sum">${e.summary}</div>
+        </div>
+        <div class="hist-right">
+          <div class="hist-time">${timeSince(e.savedAt)}</div>
+          <button class="hist-open" onclick="${openFn}">Open</button>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function filterHistory(filter, el) {
+  document.querySelectorAll(".hist-tab").forEach(t => t.classList.remove("active"));
+  el.classList.add("active");
+  const filtered = filter === "all" ? _allHistory : _allHistory.filter(e => e.workbook === filter);
+  renderHistory(filtered);
+}
+
 // ── INIT ──────────────────────────────────────────────────────────────────────
 loadUser();
 loadDashboard();
+loadHistory();
 </script>
 </body>
 </html>
