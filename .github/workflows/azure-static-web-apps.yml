@@ -19,10 +19,6 @@ jobs:
         with:
           submodules: true
 
-      - name: Install API dependencies
-        run: npm install
-        working-directory: api
-
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
