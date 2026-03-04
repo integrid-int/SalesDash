@@ -13,7 +13,8 @@
   "routes": [
     {
       "route": "/login",
-      "rewrite": "/.auth/login/aad",
+      "redirect": "/.auth/login/aad",
+      "statusCode": 302,
       "allowedRoles": ["anonymous"]
     },
     {
