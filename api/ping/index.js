@@ -3,17 +3,16 @@
 // Returns storage connectivity status and env var presence.
 // Remove this endpoint once storage is confirmed working.
 
-const { TableServiceClient } = require("@azure/data-tables");
-
 module.exports = async function (context, req) {
   const cs = process.env.STORAGE_CONNECTION_STRING;
 
   const result = {
     ok: false,
     envVarSet: !!cs,
-    envVarPrefix: cs ? cs.substring(0, 40) + "..." : null,
+    envVarPrefix: cs ? cs.substring(0, 50) + "..." : null,
     storageReachable: false,
     error: null,
+    nodeVersion: process.version,
   };
 
   if (!cs) {
@@ -23,8 +22,9 @@ module.exports = async function (context, req) {
   }
 
   try {
+    // Dynamic require so a missing module returns 200 with error info instead of crashing
+    const { TableServiceClient } = require("@azure/data-tables");
     const svc = TableServiceClient.fromConnectionString(cs);
-    // List tables — lightweight round-trip to verify the connection
     const iter = svc.listTables();
     await iter.next();
     result.storageReachable = true;
