@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Integrid — The 12-Week Push</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Syne', system-ui, sans-serif;
+  background: linear-gradient(150deg, #F0F6FF 0%, #EEF2FF 50%, #F5F3FF 100%);
+  min-height: 100vh;
+  padding: 24px 20px 60px;
+  color: #1E293B;
+}
+input, textarea, select { font-family: inherit; }
+::placeholder { color: #CBD5E1; }
+textarea { resize: vertical; }
+
+/* ── LAYOUT ── */
+.app { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+/* ── TOP BAR ── */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px;
+}
+.topbar-left h1 { font-size: 26px; font-weight: 800; color: #1E3A5F; letter-spacing: -0.02em; }
+.topbar-left p { font-size: 12px; color: #64748B; margin-top: 3px; }
+.pdf-btn {
+  display: flex; align-items: center; gap: 9px;
+  background: linear-gradient(135deg, #1E3A5F, #2563EB);
+  color: white; border: none; border-radius: 10px;
+  padding: 11px 20px; cursor: pointer;
+  font-size: 13px; font-weight: 800; font-family: inherit;
+  box-shadow: 0 4px 16px rgba(37,99,235,0.32);
+  transition: transform 0.1s;
+}
+.pdf-btn:active { transform: scale(0.97); }
+
+/* ── TAB NAV (week switcher) ── */
+.tab-nav {
+  display: flex; gap: 0;
+  background: white; border-radius: 12px;
+  border: 1px solid #E2E8F0;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+.tab-btn {
+  flex: 1; border: none; background: transparent; cursor: pointer;
+  padding: 13px 10px; font-family: inherit;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.07em;
+  text-transform: uppercase; color: #94A3B8;
+  border-right: 1px solid #E2E8F0;
+  transition: background 0.15s, color 0.15s;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.tab-btn:last-child { border-right: none; }
+.tab-btn .tab-num { font-size: 9px; color: #CBD5E1; letter-spacing: 0.15em; }
+.tab-btn.active { background: #EFF6FF; color: #2563EB; box-shadow: inset 0 -2px 0 #2563EB; }
+.tab-btn.active .tab-num { color: #93C5FD; }
+.tab-btn:hover:not(.active) { background: #F8FAFC; color: #64748B; }
+
+/* ── PAGE ── */
+.page { display: none; flex-direction: column; gap: 18px; }
+.page.active { display: flex; }
+
+/* ── CARD ── */
+.card {
+  background: white; border-radius: 14px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+.card-header {
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid #E2E8F0;
+  display: flex; align-items: center; gap: 10px;
+}
+.card-header-stripe { width: 4px; height: 22px; border-radius: 2px; flex-shrink: 0; }
+.card-header h2 {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: #94A3B8; flex: 1;
+}
+.card-purpose {
+  font-size: 11px; color: #64748B; font-weight: 400;
+  font-style: italic; max-width: 460px; text-align: right;
+}
+.card-body { padding: 20px; }
+
+/* ── PAGE HEADER BAND ── */
+.page-header-band { border-radius: 14px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+.page-header-inner {
+  padding: 22px 26px 18px;
+  display: flex; justify-content: space-between; align-items: flex-start;
+  flex-wrap: wrap; gap: 12px;
+}
+.ph-left .ph-eyebrow {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.2em;
+  text-transform: uppercase; color: rgba(255,255,255,0.55); margin-bottom: 4px;
+}
+.ph-left .ph-title { font-size: 22px; font-weight: 800; color: white; letter-spacing: -0.01em; }
+.ph-right {
+  background: rgba(255,255,255,0.1); border-radius: 10px;
+  padding: 10px 16px; border: 1px solid rgba(255,255,255,0.15);
+}
+.ph-right .ph-purpose-lbl {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.15em;
+  text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 3px;
+}
+.ph-right .ph-purpose-txt {
+  font-size: 12px; color: rgba(255,255,255,0.85); font-weight: 400;
+  line-height: 1.5; max-width: 340px;
+}
+
+/* ── FIELD COMPONENTS ── */
+.field { margin-bottom: 16px; }
+.field:last-child { margin-bottom: 0; }
+.field label {
+  display: block; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: #64748B; margin-bottom: 7px;
+}
+.field input[type=text],
+.field input[type=date],
+.field textarea {
+  width: 100%; border: 1.5px solid #E2E8F0; border-radius: 8px;
+  padding: 9px 12px; font-size: 13px; color: #1E293B;
+  background: #FAFBFC; outline: none; transition: border-color 0.15s, background 0.15s;
+  line-height: 1.5;
+}
+.field input[type=text]:focus,
+.field input[type=date]:focus,
+.field textarea:focus { border-color: #2563EB; background: white; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.field-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+/* ── SECTION DIVIDER ── */
+.section-divider {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.15em;
+  text-transform: uppercase; color: #94A3B8;
+  padding: 0 0 10px; margin-bottom: 16px;
+  border-bottom: 1px solid #E2E8F0;
+  display: flex; align-items: center; gap: 10px;
+}
+
+/* ── PUSH TABLE ── */
+.push-table { border-radius: 10px; overflow: hidden; border: 1.5px solid #E2E8F0; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+.push-table-head { display: grid; grid-template-columns: 36px 1fr 70px 44px; background: #1E3A5F; }
+.push-th { padding: 9px 10px; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.7); }
+.push-th-num, .push-th-type, .push-th-check { text-align: center; }
+.push-row { display: grid; grid-template-columns: 36px 1fr 70px 44px; border-bottom: 1px solid #EDF2F7; }
+.push-row:last-child { border-bottom: none; }
+.push-row.even { background: white; }
+.push-row.odd { background: #FAFBFC; }
+.push-row.power-row { border-left: 3px solid #2563EB; }
+.push-row.support-row { border-left: 3px solid #94A3B8; }
+.push-cell { display: flex; align-items: center; justify-content: center; padding: 4px 6px; }
+.push-cell.action-cell { justify-content: flex-start; padding: 4px 10px; }
+.push-num { font-size: 11px; font-weight: 800; color: #94A3B8; }
+.push-cell input[type=text] {
+  width: 100%; border: none; background: transparent;
+  font-size: 12px; color: #1E293B; outline: none;
+  font-family: inherit; padding: 7px 2px;
+}
+.push-cell input[type=text]:focus { background: #F0F9FF; border-radius: 4px; }
+.push-type-select {
+  width: 100%; border: 1px solid #E2E8F0; border-radius: 6px;
+  background: white; font-size: 11px; font-weight: 700;
+  color: #2563EB; outline: none; font-family: inherit;
+  padding: 5px 4px; text-align: center; cursor: pointer;
+}
+.push-type-select.support { color: #64748B; }
+.push-check {
+  width: 20px; height: 20px; border-radius: 5px;
+  border: 1.5px solid #E2E8F0; background: white;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; transition: background 0.12s, border-color 0.12s; flex-shrink: 0;
+}
+.push-check.checked { background: #059669; border-color: #059669; color: white; }
+
+/* ── SCORECARD ── */
+.scorecard-wrap { display: flex; flex-direction: column; gap: 16px; }
+.scorecard-formula { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.scorecard-box {
+  background: #F8FAFC; border: 1.5px solid #E2E8F0;
+  border-radius: 10px; padding: 10px 14px; text-align: center; min-width: 90px;
+}
+.scorecard-lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #94A3B8; margin-bottom: 6px; }
+.scorecard-box input {
+  width: 100%; border: none; background: transparent; outline: none;
+  font-family: inherit; font-size: 22px; font-weight: 800; color: #1E293B; text-align: center;
+}
+.scorecard-op { font-size: 20px; font-weight: 800; color: #94A3B8; }
+.scorecard-result {
+  font-size: 36px; font-weight: 800; color: #2563EB;
+  min-width: 100px; text-align: center;
+  background: #EFF6FF; border-radius: 12px; padding: 10px 16px;
+  border: 1.5px solid #BFDBFE;
+}
+.scorecard-bar-wrap { display: flex; align-items: center; gap: 16px; }
+.scorecard-bar { flex: 1; height: 10px; background: #E2E8F0; border-radius: 5px; overflow: hidden; }
+.scorecard-bar-fill { height: 100%; border-radius: 5px; transition: width 0.5s ease, background 0.3s; background: linear-gradient(90deg, #2563EB, #059669); }
+.scorecard-grade { font-size: 13px; font-weight: 800; color: #64748B; white-space: nowrap; min-width: 140px; }
+
+/* ── PROGRESS BAR ── */
+.progress-wrap {
+  background: white; border-radius: 10px; border: 1px solid #E2E8F0;
+  padding: 14px 18px; display: flex; align-items: center; gap: 16px;
+}
+.progress-label { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #94A3B8; white-space: nowrap; }
+.progress-bar { flex: 1; height: 6px; background: #E2E8F0; border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #2563EB, #059669); border-radius: 3px; transition: width 0.4s ease; }
+.progress-pct { font-size: 13px; font-weight: 800; color: #2563EB; min-width: 36px; text-align: right; }
+
+/* ── PRINT ── */
+.print-only { display: none; }
+@media print {
+  @page { size: letter; margin: 0.5in; }
+  body { background: white !important; padding: 0; }
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  .tab-nav { display: none !important; }
+  .app { display: flex !important; flex-direction: column; }
+  .page { display: flex !important; flex-direction: column; page-break-after: always; break-after: page; }
+  .page:last-of-type { page-break-after: avoid; break-after: avoid; }
+  .page-header-band { box-shadow: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- TOP BAR -->
+  <div class="topbar no-print">
+    <div class="topbar-left">
+      <h1>The 12-Week Push</h1>
+      <p>Integrid · MSP Sales · Set goals · Plan weekly actions · Track execution</p>
+    </div>
+    <button class="pdf-btn" onclick="exportPDF()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M6 9l6 6 6-6M3 19h18"/></svg>
+      Save as PDF
+    </button>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-wrap no-print">
+    <span class="progress-label">Completion</span>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <span class="progress-pct" id="progressPct">0%</span>
+  </div>
+
+  <!-- TABS -->
+  <div class="tab-nav no-print">
+    <button class="tab-btn active" onclick="showPage(0,this)">
+      <span class="tab-num">Section 01</span>Goals
+    </button>
+    <button class="tab-btn" onclick="showPage(1,this)">
+      <span class="tab-num">Section 02</span>Work Actions
+    </button>
+    <button class="tab-btn" onclick="showPage(2,this)">
+      <span class="tab-num">Section 03</span>Personal Actions
+    </button>
+  </div>
+
+  <!-- ════════════════════════════════════════ -->
+  <!-- PAGE 1 — GOALS & OUTCOMES               -->
+  <!-- ════════════════════════════════════════ -->
+  <div class="page active" id="page-0">
+
+    <div class="page-header-band">
+      <div class="page-header-inner" style="background:linear-gradient(135deg,#1E3A5F,#059669)">
+        <div class="ph-left">
+          <div class="ph-eyebrow">Section 1 of 3 · Integrid · 12-Week Push</div>
+          <div class="ph-title">Goals &amp; Outcomes</div>
+        </div>
+        <div class="ph-right">
+          <div class="ph-purpose-lbl">Purpose</div>
+          <div class="ph-purpose-txt">Define your life goal, anchor it to annual milestones, and compress it into 12-week outcomes you can act on this quarter.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WORK GOALS -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-stripe" style="background:linear-gradient(180deg,#1E3A5F,#2563EB)"></div>
+        <h2>Work — Life Goal</h2>
+        <span class="card-purpose">The long-term outcome your business is building toward.</span>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <label>Life Goal</label>
+          <input type="text" placeholder="e.g. Build a firm known for protection, stability, and legacy." id="g_work_life" oninput="updateProgress()">
+        </div>
+        <div class="field">
+          <label>Why This Matters</label>
+          <input type="text" placeholder="e.g. Less stress. More freedom time. Predictable revenue to grow the business." id="g_work_why" oninput="updateProgress()">
+        </div>
+        <div class="section-divider" style="margin-top:4px">1-Year Milestones</div>
+        <div class="field-row">
+          <div class="field">
+            <label>Milestone 1</label>
+            <input type="text" placeholder="e.g. Add $40,000 in MRR" id="g_work_yr1" oninput="updateProgress()">
+          </div>
+          <div class="field">
+            <label>Done By</label>
+            <input type="date" id="g_work_yr1_date" oninput="updateProgress()">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Milestone 2</label>
+            <input type="text" placeholder="e.g. 8 clients at ~$5,000 MRR each" id="g_work_yr2" oninput="updateProgress()">
+          </div>
+          <div class="field">
+            <label>Done By</label>
+            <input type="date" id="g_work_yr2_date" oninput="updateProgress()">
+          </div>
+        </div>
+        <div class="section-divider" style="margin-top:4px">12-Week Outcomes</div>
+        <div class="field-row">
+          <div class="field">
+            <label>Outcome 1</label>
+            <input type="text" placeholder="e.g. 2 clients at ~$5,000 MRR each" id="g_work_12w1" oninput="updateProgress()">
+          </div>
+          <div class="field">
+            <label>Done By</label>
+            <input type="date" id="g_work_12w1_date" oninput="updateProgress()">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Outcome 2</label>
+            <input type="text" placeholder="e.g. Pipeline of $25,000 MRR in qualified deals" id="g_work_12w2" oninput="updateProgress()">
+          </div>
+          <div class="field">
+            <label>Done By</label>
+            <input type="date" id="g_work_12w2_date" oninput="updateProgress()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PERSONAL GOALS -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-stripe" style="background:linear-gradient(180deg,#7C3AED,#2563EB)"></div>
+        <h2>Personal — Life Goal</h2>
+        <span class="card-purpose">The personal outcome you are building toward outside work.</span>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <label>Life Goal</label>
+          <input type="text" placeholder="What do you want your personal life to look like?" id="g_pers_life" oninput="updateProgress()">
+        </div>
+        <div class="field">
+          <label>Why This Matters</label>
+          <input type="text" placeholder="Why is this important to you?" id="g_pers_why" oninput="updateProgress()">
+        </div>
+        <div class="section-divider" style="margin-top:4px">1-Year Milestones</div>
+        <div class="field-row">
+          <div class="field">
+            <label>Milestone 1</label>
+            <input type="text" placeholder="1-year personal milestone..." id="g_pers_yr1" oninput="updateProgress()">
+          </div>
+          <div class="field">
+            <label>Done By</label>
+            <input type="date" id="g_pers_yr1_date" oninput="updateProgress()">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Milestone 2</label>
+            <input type="text" placeholder="1-year personal milestone..." id="g_pers_yr2" oninput="updateProgress()">
+          </div>
+          <div class="field">
+            <label>Done By</label>
+            <input type="date" id="g_pers_yr2_date" oninput="updateProgress()">
+          </div>
+        </div>
+        <div class="section-divider" style="margin-top:4px">12-Week Outcomes</div>
+        <div class="field-row">
+          <div class="field">
+            <label>Outcome 1</label>
+            <input type="text" placeholder="12-week personal outcome..." id="g_pers_12w1" oninput="updateProgress()">
+          </div>
+          <div class="field">
+            <label>Done By</label>
+            <input type="date" id="g_pers_12w1_date" oninput="updateProgress()">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Outcome 2</label>
+            <input type="text" placeholder="12-week personal outcome..." id="g_pers_12w2" oninput="updateProgress()">
+          </div>
+          <div class="field">
+            <label>Done By</label>
+            <input type="date" id="g_pers_12w2_date" oninput="updateProgress()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;" class="no-print">
+      <button class="pdf-btn" onclick="showPage(1, document.querySelectorAll('.tab-btn')[1])" style="background:linear-gradient(135deg,#1E3A5F,#059669)">
+        Next: Work Actions
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div><!-- /page-0 -->
+
+  <!-- ════════════════════════════════════════ -->
+  <!-- PAGE 2 — WORK WEEKLY ACTIONS            -->
+  <!-- ════════════════════════════════════════ -->
+  <div class="page" id="page-1">
+
+    <div class="page-header-band">
+      <div class="page-header-inner" style="background:linear-gradient(135deg,#1E3A5F,#2563EB)">
+        <div class="ph-left">
+          <div class="ph-eyebrow">Section 2 of 3 · Integrid · 12-Week Push</div>
+          <div class="ph-title">This Week's Actions — Work</div>
+        </div>
+        <div class="ph-right">
+          <div class="ph-purpose-lbl">Purpose</div>
+          <div class="ph-purpose-txt">Plan and execute your weekly Power Actions. P = outcome-driving work. S = maintenance/admin. Aim for 5 Power Actions.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WEEK META -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-stripe" style="background:linear-gradient(180deg,#1E3A5F,#2563EB)"></div>
+        <h2>Week Overview</h2>
+      </div>
+      <div class="card-body">
+        <div class="field-row-3">
+          <div class="field">
+            <label>Week Number (of 12)</label>
+            <input type="text" placeholder="e.g. 3" id="w_week_num" oninput="updateProgress()">
+          </div>
+          <div class="field">
+            <label>Hours Available</label>
+            <input type="text" placeholder="e.g. 35" id="w_hours" oninput="updateProgress()">
+          </div>
+          <div class="field">
+            <label>This Week's Focus</label>
+            <input type="text" placeholder="One-sentence theme..." id="w_focus" oninput="updateProgress()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WORK ACTION TABLE -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-stripe" style="background:linear-gradient(180deg,#2563EB,#06B6D4)"></div>
+        <h2>Action Plan</h2>
+        <span class="card-purpose">P = Power (outcome-driving) · S = Support (maintenance/admin)</span>
+      </div>
+      <div class="card-body">
+        <div class="push-table">
+          <div class="push-table-head">
+            <div class="push-th push-th-num">#</div>
+            <div class="push-th">Action + Estimate (hours)</div>
+            <div class="push-th push-th-type">Type</div>
+            <div class="push-th push-th-check">✓</div>
+          </div>
+          <div id="workActionRows"></div>
+        </div>
+        <div class="field" style="margin-top:16px">
+          <label>Notes for Next Week's Plan</label>
+          <textarea rows="3" placeholder="What carried over? What needs to change?" id="w_notes" oninput="updateProgress()"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- WORK SCORECARD -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-stripe" style="background:linear-gradient(180deg,#F59E0B,#EA580C)"></div>
+        <h2>Scorecard</h2>
+        <span class="card-purpose">Power Actions Completed ÷ Total Power Actions × 100</span>
+      </div>
+      <div class="card-body">
+        <div class="scorecard-wrap">
+          <div class="scorecard-formula">
+            <div class="scorecard-box">
+              <div class="scorecard-lbl">Completed</div>
+              <input type="text" id="w_sc_completed" placeholder="0" oninput="calcScore('w')">
+            </div>
+            <div class="scorecard-op">÷</div>
+            <div class="scorecard-box">
+              <div class="scorecard-lbl">Total Power</div>
+              <input type="text" id="w_sc_total" placeholder="0" oninput="calcScore('w')">
+            </div>
+            <div class="scorecard-op">× 100 =</div>
+            <div class="scorecard-result" id="w_sc_result">—</div>
+          </div>
+          <div class="scorecard-bar-wrap">
+            <div class="scorecard-bar"><div class="scorecard-bar-fill" id="w_sc_bar" style="width:0%"></div></div>
+            <div class="scorecard-grade" id="w_sc_grade"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;" class="no-print">
+      <button class="pdf-btn" onclick="showPage(0, document.querySelectorAll('.tab-btn')[0])" style="background:rgba(30,58,95,0.8);box-shadow:none">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transform:scaleX(-1)"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Back
+      </button>
+      <button class="pdf-btn" onclick="showPage(2, document.querySelectorAll('.tab-btn')[2])" style="background:linear-gradient(135deg,#1E3A5F,#7C3AED)">
+        Next: Personal Actions
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div><!-- /page-1 -->
+
+  <!-- ════════════════════════════════════════ -->
+  <!-- PAGE 3 — PERSONAL WEEKLY ACTIONS        -->
+  <!-- ════════════════════════════════════════ -->
+  <div class="page" id="page-2">
+
+    <div class="page-header-band">
+      <div class="page-header-inner" style="background:linear-gradient(135deg,#7C3AED,#2563EB)">
+        <div class="ph-left">
+          <div class="ph-eyebrow">Section 3 of 3 · Integrid · 12-Week Push</div>
+          <div class="ph-title">This Week's Actions — Personal</div>
+        </div>
+        <div class="ph-right">
+          <div class="ph-purpose-lbl">Purpose</div>
+          <div class="ph-purpose-txt">Track personal Power Actions alongside work. Balance drives sustainability — great weeks are won or lost on personal energy first.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PERSONAL WEEK META -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-stripe" style="background:linear-gradient(180deg,#7C3AED,#2563EB)"></div>
+        <h2>Week Overview</h2>
+      </div>
+      <div class="card-body">
+        <div class="field-row-3">
+          <div class="field">
+            <label>Week Number (of 12)</label>
+            <input type="text" placeholder="e.g. 3" id="p_week_num" oninput="updateProgress()">
+          </div>
+          <div class="field">
+            <label>Hours Available</label>
+            <input type="text" placeholder="e.g. 15" id="p_hours" oninput="updateProgress()">
+          </div>
+          <div class="field">
+            <label>This Week's Focus</label>
+            <input type="text" placeholder="One-sentence personal theme..." id="p_focus" oninput="updateProgress()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PERSONAL ACTION TABLE -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-stripe" style="background:linear-gradient(180deg,#7C3AED,#06B6D4)"></div>
+        <h2>Action Plan</h2>
+        <span class="card-purpose">P = Power (outcome-driving) · S = Support (maintenance/admin)</span>
+      </div>
+      <div class="card-body">
+        <div class="push-table">
+          <div class="push-table-head">
+            <div class="push-th push-th-num">#</div>
+            <div class="push-th">Action + Estimate (hours)</div>
+            <div class="push-th push-th-type">Type</div>
+            <div class="push-th push-th-check">✓</div>
+          </div>
+          <div id="persActionRows"></div>
+        </div>
+        <div class="field" style="margin-top:16px">
+          <label>Notes for Next Week's Plan</label>
+          <textarea rows="3" placeholder="What carried over? What needs to change?" id="p_notes" oninput="updateProgress()"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- PERSONAL SCORECARD -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-stripe" style="background:linear-gradient(180deg,#F59E0B,#EA580C)"></div>
+        <h2>Scorecard</h2>
+        <span class="card-purpose">Power Actions Completed ÷ Total Power Actions × 100</span>
+      </div>
+      <div class="card-body">
+        <div class="scorecard-wrap">
+          <div class="scorecard-formula">
+            <div class="scorecard-box">
+              <div class="scorecard-lbl">Completed</div>
+              <input type="text" id="p_sc_completed" placeholder="0" oninput="calcScore('p')">
+            </div>
+            <div class="scorecard-op">÷</div>
+            <div class="scorecard-box">
+              <div class="scorecard-lbl">Total Power</div>
+              <input type="text" id="p_sc_total" placeholder="0" oninput="calcScore('p')">
+            </div>
+            <div class="scorecard-op">× 100 =</div>
+            <div class="scorecard-result" id="p_sc_result">—</div>
+          </div>
+          <div class="scorecard-bar-wrap">
+            <div class="scorecard-bar"><div class="scorecard-bar-fill" id="p_sc_bar" style="width:0%"></div></div>
+            <div class="scorecard-grade" id="p_sc_grade"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;" class="no-print">
+      <button class="pdf-btn" onclick="showPage(1, document.querySelectorAll('.tab-btn')[1])" style="background:rgba(30,58,95,0.8);box-shadow:none">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transform:scaleX(-1)"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Back
+      </button>
+      <button class="pdf-btn" onclick="exportPDF()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M6 9l6 6 6-6M3 19h18"/></svg>
+        Save Complete Workbook as PDF
+      </button>
+    </div>
+  </div><!-- /page-2 -->
+
+</div><!-- /app -->
+
+<script>
+// ── PRINT / PDF EXPORT ────────────────────────────────────────────────────────
+function exportPDF() {
+  var p = (window.WorkbookStorage && WorkbookStorage.saveNow)
+    ? WorkbookStorage.saveNow() : Promise.resolve();
+  p.then(function() { window.print(); });
+}
+
+// ── TAB SWITCHING ─────────────────────────────────────────────────────────────
+function showPage(idx, btn) {
+  document.querySelectorAll('.page').forEach((p, i) => p.classList.toggle('active', i === idx));
+  document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── ACTION TABLE FACTORY ──────────────────────────────────────────────────────
+const WORK_DEFAULTS = [
+  { action: "Create pipeline: Identify 5 new prospective customers", type: "P", checked: false },
+  { action: "Create pipeline: Send a standardized Point of View to 5 customers", type: "P", checked: false },
+  { action: "Advance pipeline: Follow up with every customer in the pipeline", type: "P", checked: false },
+  { action: "Advance pipeline: Finalize and send proposal to customer ABC", type: "P", checked: false },
+  { action: "Pay suppliers and employees", type: "P", checked: false },
+  { action: "Respond to urgent emails (accountants, lawyers, insurance etc.)", type: "P", checked: false },
+  { action: "Respond to all remaining important emails", type: "S", checked: false },
+  { action: "", type: "P", checked: false },
+  { action: "", type: "P", checked: false },
+  { action: "", type: "P", checked: false },
+  { action: "", type: "P", checked: false },
+  { action: "", type: "P", checked: false },
+  { action: "", type: "P", checked: false },
+  { action: "", type: "P", checked: false },
+  { action: "", type: "P", checked: false },
+];
+
+const PERS_DEFAULTS = Array.from({ length: 15 }, () => ({ action: "", type: "P", checked: false }));
+
+let workData = WORK_DEFAULTS.map(r => ({ ...r }));
+let persData = PERS_DEFAULTS.map(r => ({ ...r }));
+
+function renderTable(containerId, data, prefix) {
+  const tbody = document.getElementById(containerId);
+  if (!tbody) return;
+  tbody.innerHTML = "";
+  data.forEach(function(row, ri) {
+    const tr = document.createElement("div");
+    tr.className = "push-row " + (ri % 2 === 0 ? "even" : "odd") + " " + (row.type === "P" ? "power-row" : "support-row");
+    const actionVal = (row.action || "").replace(/"/g, "&quot;");
+    tr.innerHTML = `
+      <div class="push-cell"><span class="push-num">${ri + 1}</span></div>
+      <div class="push-cell action-cell">
+        <input type="text" placeholder="Action + hours estimate..." value="${actionVal}"
+          data-prefix="${prefix}" data-ri="${ri}"
+          onchange="getDataSet('${prefix}')[this.dataset.ri].action=this.value;updateProgress();">
+      </div>
+      <div class="push-cell">
+        <select class="push-type-select ${row.type === 'S' ? 'support' : ''}"
+          data-prefix="${prefix}" data-ri="${ri}"
+          onchange="getDataSet('${prefix}')[this.dataset.ri].type=this.value;renderTable('${containerId}',getDataSet('${prefix}'),'${prefix}');updateProgress();">
+          <option value="P" ${row.type === "P" ? "selected" : ""}>P</option>
+          <option value="S" ${row.type === "S" ? "selected" : ""}>S</option>
+        </select>
+      </div>
+      <div class="push-cell">
+        <div class="push-check ${row.checked ? 'checked' : ''}"
+          data-prefix="${prefix}" data-ri="${ri}"
+          onclick="getDataSet('${prefix}')[this.dataset.ri].checked=!getDataSet('${prefix}')[this.dataset.ri].checked;this.classList.toggle('checked');this.textContent=getDataSet('${prefix}')[this.dataset.ri].checked?'✓':'';updateProgress();">
+          ${row.checked ? "✓" : ""}
+        </div>
+      </div>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function getDataSet(prefix) {
+  return prefix === "w" ? workData : persData;
+}
+
+// ── SCORECARD ─────────────────────────────────────────────────────────────────
+function calcScore(prefix) {
+  const comp  = parseFloat(document.getElementById(prefix + "_sc_completed").value) || 0;
+  const total = parseFloat(document.getElementById(prefix + "_sc_total").value) || 0;
+  const result = document.getElementById(prefix + "_sc_result");
+  const bar    = document.getElementById(prefix + "_sc_bar");
+  const grade  = document.getElementById(prefix + "_sc_grade");
+  if (total === 0) { result.textContent = "—"; bar.style.width = "0%"; grade.textContent = ""; return; }
+  const pct = Math.round((comp / total) * 100);
+  result.textContent = pct + "%";
+  bar.style.width = Math.min(pct, 100) + "%";
+  if (pct >= 85)      { grade.textContent = "🏆 Elite execution";  bar.style.background = "linear-gradient(90deg,#059669,#10B981)"; }
+  else if (pct >= 70) { grade.textContent = "✅ Strong week";       bar.style.background = "linear-gradient(90deg,#2563EB,#059669)"; }
+  else if (pct >= 50) { grade.textContent = "⚠️ Room to improve";  bar.style.background = "linear-gradient(90deg,#F59E0B,#EA580C)"; }
+  else                { grade.textContent = "🔴 Replan needed";     bar.style.background = "linear-gradient(90deg,#DC2626,#F59E0B)"; }
+  updateProgress();
+}
+
+// ── PROGRESS ──────────────────────────────────────────────────────────────────
+function updateProgress() {
+  const fields = document.querySelectorAll('input[type=text], input[type=date], textarea');
+  let filled = 0;
+  fields.forEach(f => { if (f.value.trim()) filled++; });
+  const pct = Math.min(100, Math.round((filled / fields.length) * 100));
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct + '%';
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+renderTable("workActionRows", workData, "w");
+renderTable("persActionRows", persData, "p");
+updateProgress();
+</script>
+
+<script src="workbook-storage.js"></script>
+<script>
+// STORAGE WIRING — 12-Week Push
+(function () {
+  var statusEl = document.createElement("div");
+  statusEl.id = "saveStatus";
+  statusEl.style.cssText = "font-size:11px;font-weight:700;letter-spacing:0.07em;color:#94A3B8;transition:color 0.3s;align-self:center;";
+  statusEl.textContent = "Connecting...";
+  var topbar = document.querySelector(".topbar");
+  if (topbar) topbar.appendChild(statusEl);
+
+  function collectFields() {
+    var data = {};
+    document.querySelectorAll("input[id], textarea[id]").forEach(function(el) {
+      data[el.id] = el.value;
+    });
+    data["__workData"] = JSON.parse(JSON.stringify(workData));
+    data["__persData"] = JSON.parse(JSON.stringify(persData));
+    return data;
+  }
+
+  function populateFields(data) {
+    if (!data || typeof data !== "object") return;
+    Object.keys(data).forEach(function(id) {
+      if (id === "__workData" || id === "__persData") return;
+      var el = document.getElementById(id);
+      if (el) el.value = data[id];
+    });
+    if (data["__workData"] && Array.isArray(data["__workData"])) {
+      workData = data["__workData"];
+      renderTable("workActionRows", workData, "w");
+    }
+    if (data["__persData"] && Array.isArray(data["__persData"])) {
+      persData = data["__persData"];
+      renderTable("persActionRows", persData, "p");
+    }
+    updateProgress();
+  }
+
+  window.addEventListener("load", function() {
+    WorkbookStorage.init("push", collectFields, populateFields);
+  });
+})();
+</script>
+
+</body>
+</html>

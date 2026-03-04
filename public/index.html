@@ -565,7 +565,7 @@ footer {
 <div class="wbs">
   <div class="wbs-bar">
     <div class="wbs-bar-title">Workbook Library</div>
-    <div class="wbs-bar-count">2 Active · 2 Coming Soon</div>
+    <div class="wbs-bar-count">3 Active · 2 Coming Soon</div>
   </div>
   <div class="wbs-grid">
 
@@ -609,14 +609,34 @@ footer {
       </div>
     </div>
 
-    <div class="wc locked">
+    <div class="wc live" onclick="openTool('push','The 12-Week Push')" tabindex="0" role="button">
       <div class="wc-stripe st-green"></div>
       <div class="wc-inner">
-        <div class="wc-icon ic-green">🏗</div>
+        <div class="wc-icon ic-green">🎯</div>
         <div class="wc-num">WB — 03</div>
+        <div class="wc-title">The 12-Week Push</div>
+        <div class="wc-desc">Set life goals, anchor 12-week outcomes, and plan weekly Power Actions for work and personal. Scorecard tracks execution each week.</div>
+        <div class="wc-tags">
+          <span class="tag tg-green">Goal Setting</span>
+          <span class="tag tg-cyan">Weekly Actions</span>
+          <span class="tag tg-green">Scorecard</span>
+          <span class="tag tg-green">PDF Export</span>
+        </div>
+        <div class="wc-foot">
+          <span class="wc-cta">Open Workbook</span>
+          <div class="wc-arrow"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wc locked">
+      <div class="wc-stripe st-red"></div>
+      <div class="wc-inner">
+        <div class="wc-icon ic-red">🏗</div>
+        <div class="wc-num">WB — 04</div>
         <div class="wc-title">Pipeline Tracker</div>
         <div class="wc-desc">Track active opportunities by stage, deal size, and close probability across manufacturing, law, and construction.</div>
-        <div class="wc-tags"><span class="tag tg-green">Opportunities</span><span class="tag tg-green">Forecasting</span></div>
+        <div class="wc-tags"><span class="tag tg-red">Opportunities</span><span class="tag tg-red">Forecasting</span></div>
         <div class="wc-foot"><span class="wc-soon">Coming Soon</span></div>
       </div>
     </div>
@@ -624,8 +644,8 @@ footer {
     <div class="wc locked">
       <div class="wc-stripe st-red"></div>
       <div class="wc-inner">
-        <div class="wc-icon ic-red">🎯</div>
-        <div class="wc-num">WB — 04</div>
+        <div class="wc-icon ic-red">📞</div>
+        <div class="wc-num">WB — 05</div>
         <div class="wc-title">Prospecting Engine</div>
         <div class="wc-desc">Daily outbound cadence tracker. Log calls, emails, and LinkedIn touches. Measure conversion from first touch to discovery.</div>
         <div class="wc-tags"><span class="tag tg-red">Outbound</span><span class="tag tg-red">Cadence</span></div>
@@ -853,7 +873,7 @@ function renderSparkline(svgId, data, colorA, colorB) {
 }
 
 // ── MODAL ─────────────────────────────────────────────────────────────────────
-const ROUTES = { growth: "integrid_weekly_growth.html", audit: "integrid_time_audit.html" };
+const ROUTES = { growth: "integrid_weekly_growth.html", audit: "integrid_time_audit.html", push: "integrid_12week_push.html" };
 function openTool(key, title, week) {
   document.getElementById("modalTitle").textContent = title + (week ? " · " + week : "");
   const src = ROUTES[key] + (week ? "?week=" + encodeURIComponent(week) : "");
