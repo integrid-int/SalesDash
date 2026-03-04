@@ -25,8 +25,8 @@ module.exports = async function (context, req) {
   const body = req.body || {};
   const { workbook, isoWeek, data } = body;
 
-  if (!workbook || !["audit", "growth"].includes(workbook)) {
-    context.res = { status: 400, body: { error: "workbook must be 'audit' or 'growth'" } };
+  if (!workbook || !["audit", "growth", "push"].includes(workbook)) {
+    context.res = { status: 400, body: { error: "workbook must be 'audit', 'growth', or 'push'" } };
     return;
   }
   if (!data || typeof data !== "object") {
