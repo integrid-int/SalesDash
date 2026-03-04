@@ -38,6 +38,7 @@ jobs:
           app_location: "public"
           api_location: "api"
           output_location: ""
+          skip_api_build: true
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
