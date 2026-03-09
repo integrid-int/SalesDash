@@ -1,6 +1,6 @@
 // api/save/index.js
 // POST /api/save
-// Body: { workbook: "audit"|"growth", isoWeek: "2026-W09", data: { ...fields } }
+// Body: { workbook: "audit"|"growth"|"push"|"daily", isoWeek: "2026-W09", data: { ...fields } }
 // Returns: { ok: true, savedAt: "<iso>" }
 
 const {
@@ -25,8 +25,8 @@ module.exports = async function (context, req) {
   const body = req.body || {};
   const { workbook, isoWeek, data } = body;
 
-  if (!workbook || !["audit", "growth", "push"].includes(workbook)) {
-    context.res = { status: 400, body: { error: "workbook must be 'audit', 'growth', or 'push'" } };
+  if (!workbook || !["audit", "growth", "push", "daily"].includes(workbook)) {
+    context.res = { status: 400, body: { error: "workbook must be 'audit', 'growth', 'push', or 'daily'" } };
     return;
   }
   if (!data || typeof data !== "object") {
@@ -83,7 +83,6 @@ async function refreshMeta(userId, currentWeek) {
 // Return the ISO week string for the week before a given one
 function prevWeek(isoWeek) {
   const [year, wNum] = isoWeek.split("-W").map(Number);
-  // Convert ISO week → date → subtract 7 days → back to ISO week
   const jan4 = new Date(Date.UTC(year, 0, 4));
   const dayOfWeek = jan4.getUTCDay() || 7;
   const weekStart = new Date(jan4);

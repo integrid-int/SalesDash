@@ -229,6 +229,7 @@ nav {
 .ai-audit  { background: rgba(245,158,11,.14); border: 1px solid rgba(245,158,11,.2); }
 .ai-growth { background: rgba(37,99,235,.14);  border: 1px solid rgba(37,99,235,.2); }
 .ai-push   { background: rgba(16,185,129,.14); border: 1px solid rgba(16,185,129,.2); }
+.ai-daily  { background: rgba(245,158,11,.14); border: 1px solid rgba(245,158,11,.2); }
 .activity-text { flex: 1; }
 .activity-wk   { font-size: 12px; font-weight: 700; color: var(--text); }
 .activity-sum  { font-size: 11px; color: var(--muted); margin-top: 1px; }
@@ -320,6 +321,7 @@ nav {
 }
 .wc:nth-child(1){animation-delay:.05s}.wc:nth-child(2){animation-delay:.12s}
 .wc:nth-child(3){animation-delay:.19s}.wc:nth-child(4){animation-delay:.26s}
+.wc:nth-child(5){animation-delay:.33s}
 .wc.live:hover {
   transform: translateY(-4px);
   border-color: rgba(37,99,235,.4);
@@ -492,8 +494,6 @@ footer {
 
   <!-- Workbook metric cards -->
   <div class="dash-cards">
-
-    <!-- Time Audit card -->
     <div class="dash-card">
       <div class="dash-card-header">
         <div class="dash-card-title">⏱ Time Audit</div>
@@ -514,7 +514,6 @@ footer {
       </div>
     </div>
 
-    <!-- Weekly Growth card -->
     <div class="dash-card">
       <div class="dash-card-header">
         <div class="dash-card-title">📈 Weekly Growth</div>
@@ -554,6 +553,7 @@ footer {
         <div class="hist-tab active" onclick="filterHistory('all',this)">All</div>
         <div class="hist-tab" onclick="filterHistory('audit',this)">Time Audit</div>
         <div class="hist-tab" onclick="filterHistory('growth',this)">Growth</div>
+        <div class="hist-tab" onclick="filterHistory('daily',this)">Daily Plan</div>
       </div>
     </div>
     <div class="hist-list" id="historyList">
@@ -566,7 +566,7 @@ footer {
 <div class="wbs">
   <div class="wbs-bar">
     <div class="wbs-bar-title">Workbook Library</div>
-    <div class="wbs-bar-count">3 Active · 2 Coming Soon</div>
+    <div class="wbs-bar-count">4 Active · 1 Coming Soon</div>
   </div>
   <div class="wbs-grid">
 
@@ -630,15 +630,23 @@ footer {
       </div>
     </div>
 
-    <div class="wc locked">
-      <div class="wc-stripe st-red"></div>
+    <div class="wc live" onclick="openTool('daily','Daily Plan')" tabindex="0" role="button">
+      <div class="wc-stripe st-gold"></div>
       <div class="wc-inner">
-        <div class="wc-icon ic-red">🏗</div>
+        <div class="wc-icon ic-gold">📋</div>
         <div class="wc-num">WB — 04</div>
-        <div class="wc-title">Pipeline Tracker</div>
-        <div class="wc-desc">Track active opportunities by stage, deal size, and close probability across manufacturing, law, and construction.</div>
-        <div class="wc-tags"><span class="tag tg-red">Opportunities</span><span class="tag tg-red">Forecasting</span></div>
-        <div class="wc-foot"><span class="wc-soon">Coming Soon</span></div>
+        <div class="wc-title">Daily Plan</div>
+        <div class="wc-desc">Weekly pipeline execution planner. Set your top accounts and deals, then plan daily tasks to advance your pipeline and create new pipeline across Mon–Fri.</div>
+        <div class="wc-tags">
+          <span class="tag tg-gold">Advance Pipeline</span>
+          <span class="tag tg-cyan">New Pipeline</span>
+          <span class="tag tg-gold">Daily Tracking</span>
+          <span class="tag tg-gold">RGA Hours</span>
+        </div>
+        <div class="wc-foot">
+          <span class="wc-cta">Open Workbook</span>
+          <div class="wc-arrow"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
+        </div>
       </div>
     </div>
 
@@ -653,6 +661,7 @@ footer {
         <div class="wc-foot"><span class="wc-soon">Coming Soon</span></div>
       </div>
     </div>
+
   </div>
 </div>
 
@@ -741,30 +750,25 @@ async function loadDashboard() {
     if (!res.ok) { showDashboardError(); return; }
     const d    = await res.json();
 
-    // Week label
     document.getElementById("dashWeekLabel").textContent =
       "Week of " + isoWeekLabel(d.currentWeek);
 
     // ── Strip ─────────────────────────────────────────────────────────────
-    // RGA %
     const rga = d.audit ? d.audit.lastRgaPct : null;
     document.getElementById("dsRga").textContent    = rga !== null ? `${rga}%` : "—";
     document.getElementById("dsRgaSub").textContent = d.audit
       ? `goal ${d.audit.goalRgaPct}% · ${d.audit.weekLabel}`
       : "No data yet";
 
-    // Streak
     document.getElementById("dsStreak").textContent    = `${d.streak}`;
     document.getElementById("dsStreakSub").textContent  = d.streak === 1 ? "week in a row" : "weeks in a row";
 
-    // Growth
     const gPct = d.growth ? d.growth.completionPct : null;
     document.getElementById("dsGrowth").textContent    = gPct !== null ? `${gPct}%` : "—";
     document.getElementById("dsGrowthSub").textContent = d.growth
       ? `filled · ${d.growth.weekLabel}`
       : "No data yet";
 
-    // Total
     document.getElementById("dsTotal").textContent    = `${d.totalEntries}`;
     document.getElementById("dsTotalSub").textContent = "workbook saves";
 
@@ -784,7 +788,6 @@ async function loadDashboard() {
       document.getElementById("auditBadge").textContent = d.audit.weekLabel;
       document.getElementById("auditBadge").className   = "dash-card-badge badge-gold";
 
-      // Sparkline
       renderSparkline("sparklineAudit", d.auditSparkline || [], "#F59E0B", "#FCD34D");
     } else {
       document.getElementById("auditRgaVal").textContent = "—";
@@ -812,18 +815,23 @@ async function loadDashboard() {
     if (!d.recentActivity || d.recentActivity.length === 0) {
       list.innerHTML = '<div class="activity-empty">No activity yet. Open a workbook to get started.</div>';
     } else {
-      list.innerHTML = d.recentActivity.map(a => `
+      list.innerHTML = d.recentActivity.map(a => {
+        const isAudit  = a.workbook === "audit";
+        const isPush   = a.workbook === "push";
+        const isDaily  = a.workbook === "daily";
+        const icon     = isAudit ? "⏱" : isPush ? "🎯" : isDaily ? "📋" : "📈";
+        const iconCls  = isAudit ? "ai-audit" : isPush ? "ai-push" : isDaily ? "ai-daily" : "ai-growth";
+        const label    = isAudit ? "Time Audit" : isPush ? "12-Week Push" : isDaily ? "Daily Plan" : "Weekly Growth";
+        return `
         <div class="activity-item">
-          <div class="activity-icon ${a.workbook === 'audit' ? 'ai-audit' : a.workbook === 'push' ? 'ai-push' : 'ai-growth'}">
-            ${a.workbook === 'audit' ? '⏱' : a.workbook === 'push' ? '🎯' : '📈'}
-          </div>
+          <div class="activity-icon ${iconCls}">${icon}</div>
           <div class="activity-text">
-            <div class="activity-wk">${a.workbook === 'audit' ? 'Time Audit' : a.workbook === 'push' ? '12-Week Push' : 'Weekly Growth'} · ${a.isoWeek}</div>
+            <div class="activity-wk">${label} · ${a.isoWeek}</div>
             <div class="activity-sum">${a.summary}</div>
           </div>
           <div class="activity-time">${timeSince(a.savedAt)}</div>
-        </div>
-      `).join("");
+        </div>`;
+      }).join("");
     }
 
   } catch (err) {
@@ -874,7 +882,13 @@ function renderSparkline(svgId, data, colorA, colorB) {
 }
 
 // ── MODAL ─────────────────────────────────────────────────────────────────────
-const ROUTES = { growth: "integrid_weekly_growth.html", audit: "integrid_time_audit.html", push: "integrid_12week_push.html" };
+const ROUTES = {
+  growth: "integrid_weekly_growth.html",
+  audit:  "integrid_time_audit.html",
+  push:   "integrid_12week_push.html",
+  daily:  "integrid_daily_plan.html",
+};
+
 function openTool(key, title, week) {
   document.getElementById("modalTitle").textContent = title + (week ? " · " + week : "");
   const src = ROUTES[key] + (week ? "?week=" + encodeURIComponent(week) : "");
@@ -885,7 +899,6 @@ function openTool(key, title, week) {
 function closeModal() {
   document.getElementById("modal").classList.remove("open");
   document.body.style.overflow = "";
-  // Reload dashboard when modal closes — data may have been saved
   setTimeout(() => {
     document.getElementById("modalFrame").src = "";
     loadDashboard();
@@ -923,13 +936,16 @@ function renderHistory(entries) {
   list.innerHTML = entries.map(e => {
     const isAudit = e.workbook === "audit";
     const isPush  = e.workbook === "push";
-    const icon    = isAudit ? "⏱" : isPush ? "🎯" : "📈";
-    const label   = isAudit ? "Time Audit" : isPush ? "12-Week Push" : "Weekly Growth";
-    const iconCls = isAudit ? "ai-audit" : isPush ? "ai-push" : "ai-growth";
+    const isDaily = e.workbook === "daily";
+    const icon    = isAudit ? "⏱" : isPush ? "🎯" : isDaily ? "📋" : "📈";
+    const label   = isAudit ? "Time Audit" : isPush ? "12-Week Push" : isDaily ? "Daily Plan" : "Weekly Growth";
+    const iconCls = isAudit ? "ai-audit" : isPush ? "ai-push" : isDaily ? "ai-daily" : "ai-growth";
     const openFn  = isAudit
       ? `openTool('audit','Time Audit &amp; RGA Redesign','${e.isoWeek}')`
       : isPush
       ? `openTool('push','The 12-Week Push','${e.isoWeek}')`
+      : isDaily
+      ? `openTool('daily','Daily Plan','${e.isoWeek}')`
       : `openTool('growth','Weekly Growth Workbook','${e.isoWeek}')`;
     return `
       <div class="hist-item">

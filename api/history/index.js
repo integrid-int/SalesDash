@@ -21,8 +21,8 @@ module.exports = async function (context, req) {
   const workbook = req.query.workbook;
   const limit    = Math.min(52, parseInt(req.query.limit || "12", 10));
 
-  if (workbook && !["audit", "growth", "push"].includes(workbook)) {
-    context.res = { status: 400, body: { error: "workbook must be 'audit', 'growth', or 'push'" } };
+  if (workbook && !["audit", "growth", "push", "daily"].includes(workbook)) {
+    context.res = { status: 400, body: { error: "workbook must be 'audit', 'growth', 'push', or 'daily'" } };
     return;
   }
 
@@ -35,7 +35,6 @@ module.exports = async function (context, req) {
       isoWeek:   e.isoWeek,
       savedAt:   e.savedAt,
       summary:   buildSummary(e),
-      // Include lightweight metrics but not full data to keep payload small
       metrics:   buildMetrics(e),
     }));
 
@@ -81,12 +80,25 @@ function buildMetrics(entry) {
       completionPct: Math.min(100, Math.round((countFilled(entry.data || {}) / GROWTH_FIELD_COUNT) * 100)),
     };
   }
+  if (entry.workbook === "daily") {
+    const d = entry.data || {};
+    const days = Array.isArray(d.days) ? d.days : [];
+    const totalChecked = days.reduce((s, day) => {
+      const tasks = [...(day.advance || []), ...(day.create || [])];
+      return s + tasks.filter(t => t.checked).length;
+    }, 0);
+    const totalHrs = days.reduce((s, day) => {
+      return s + (parseFloat(day.advanceHours) || 0) + (parseFloat(day.createHours) || 0);
+    }, 0);
+    return { totalChecked, totalHrs: Math.round(totalHrs * 10) / 10 };
+  }
   return {};
 }
 
 function buildSummary(entry) {
   const m = buildMetrics(entry);
-  if (entry.workbook === "audit") return `RGA ${m.lastRgaPct}% actual · ${m.goalRgaPct}% goal`;
+  if (entry.workbook === "audit")  return `RGA ${m.lastRgaPct}% actual · ${m.goalRgaPct}% goal`;
   if (entry.workbook === "growth") return `${m.completionPct}% complete`;
+  if (entry.workbook === "daily")  return `${m.totalChecked} tasks done · ${m.totalHrs}h RGA`;
   return "";
 }
