@@ -248,6 +248,31 @@ nav {
 .skel-sub { display: inline-block; width: 80px; height: 12px; margin-top: 5px; }
 .skel-bar { display: block; width: 100%; height: 6px; margin-top: 8px; }
 
+/* ── DAILY PLAN STRIP ── */
+.daily-card {
+  background: var(--navy2); border: 1px solid var(--edge);
+  border-radius: 14px; overflow: hidden; margin-bottom: 18px;
+}
+.daily-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px 12px; border-bottom: 1px solid var(--edge);
+}
+.daily-card-title { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.daily-strip {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; padding: 16px 18px;
+}
+.daily-day {
+  background: rgba(255,255,255,0.03); border: 1px solid var(--edge);
+  border-radius: 10px; padding: 12px 10px; text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+.daily-day.has-data { border-color: rgba(245,158,11,.25); background: rgba(245,158,11,.05); }
+.daily-day-lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.daily-day-num { font-size: 24px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+.daily-day-frac { font-size: 10px; color: var(--muted); margin-top: 3px; }
+.daily-day-hrs { font-size: 10px; color: var(--muted); margin-top: 4px; }
+@media (max-width:600px) { .daily-strip { grid-template-columns: repeat(5,1fr); gap:6px; padding:10px; } .daily-day { padding:8px 4px; } .daily-day-num { font-size:18px; } }
+
 /* ── HISTORY SECTION ── */
 .hist-wrap {
   position: relative; z-index: 1;
@@ -535,6 +560,21 @@ footer {
     </div>
   </div>
 
+  <!-- Daily Plan strip -->
+  <div class="daily-card">
+    <div class="daily-card-header">
+      <div class="daily-card-title">📋 Daily Plan — This Week</div>
+      <span class="dash-card-badge badge-gold" id="dailyBadge">Loading…</span>
+    </div>
+    <div class="daily-strip" id="dailyStrip">
+      <div class="daily-day"><div class="daily-day-lbl">Mon</div><div class="daily-day-num skeleton skel-val" style="height:28px;width:40px;margin:0 auto"></div></div>
+      <div class="daily-day"><div class="daily-day-lbl">Tue</div><div class="daily-day-num skeleton skel-val" style="height:28px;width:40px;margin:0 auto"></div></div>
+      <div class="daily-day"><div class="daily-day-lbl">Wed</div><div class="daily-day-num skeleton skel-val" style="height:28px;width:40px;margin:0 auto"></div></div>
+      <div class="daily-day"><div class="daily-day-lbl">Thu</div><div class="daily-day-num skeleton skel-val" style="height:28px;width:40px;margin:0 auto"></div></div>
+      <div class="daily-day"><div class="daily-day-lbl">Fri</div><div class="daily-day-num skeleton skel-val" style="height:28px;width:40px;margin:0 auto"></div></div>
+    </div>
+  </div>
+
   <!-- Recent activity -->
   <div class="activity-card">
     <div class="activity-header">Recent Activity</div>
@@ -740,6 +780,12 @@ function showDashboardError(msg) {
   document.getElementById("growthBadge").textContent  = "Error";
   document.getElementById("growthBadge").className    = "dash-card-badge badge-muted";
   document.getElementById("activityList").innerHTML   = '<div class="activity-empty">Could not load activity.</div>';
+  const db = document.getElementById("dailyBadge");
+  if (db) { db.textContent = "Error"; db.className = "dash-card-badge badge-muted"; }
+  const ds = document.getElementById("dailyStrip");
+  if (ds) ds.innerHTML = ["Mon","Tue","Wed","Thu","Fri"].map(l =>
+    `<div class="daily-day"><div class="daily-day-lbl">${l}</div><div class="daily-day-num" style="color:var(--muted)">—</div></div>`
+  ).join("");
 }
 
 // ── DASHBOARD LOAD ────────────────────────────────────────────────────────────
@@ -808,6 +854,41 @@ async function loadDashboard() {
       document.getElementById("growthSub").textContent      = "No entries yet — open Weekly Growth to start";
       document.getElementById("growthBadge").textContent    = "No data";
       document.getElementById("growthBadge").className      = "dash-card-badge badge-muted";
+    }
+
+    // ── Daily plan strip ──────────────────────────────────────────────────
+    const dailyBadge = document.getElementById("dailyBadge");
+    const dailyStrip = document.getElementById("dailyStrip");
+    const WEEK_DAYS  = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+    if (d.daily) {
+      const dl = d.daily;
+      dailyBadge.textContent = dl.isCurrentWeek ? "This week" : dl.isoWeek;
+      dailyBadge.className   = "dash-card-badge badge-gold";
+      const days = dl.days.length > 0 ? dl.days
+        : WEEK_DAYS.map(l => ({ label: l, checked: 0, total: 0, hours: 0 }));
+      dailyStrip.innerHTML = days.map(day => {
+        const pct     = day.total > 0 ? Math.round((day.checked / day.total) * 100) : 0;
+        const color   = day.total === 0 ? "var(--muted)"
+                      : pct === 100    ? "var(--green)"
+                      : pct >= 50      ? "var(--gold)" : "var(--text)";
+        const hasData = day.total > 0;
+        const hrs     = day.hours > 0 ? `<div class="daily-day-hrs">${day.hours}h</div>` : "";
+        return `<div class="daily-day${hasData ? " has-data" : ""}">
+          <div class="daily-day-lbl">${(day.label||"").substring(0,3)}</div>
+          <div class="daily-day-num" style="color:${color}">${hasData ? day.checked : "—"}</div>
+          <div class="daily-day-frac">${hasData ? `of ${day.total}` : "no data"}</div>
+          ${hrs}
+        </div>`;
+      }).join("");
+    } else {
+      dailyBadge.textContent = "No data";
+      dailyBadge.className   = "dash-card-badge badge-muted";
+      dailyStrip.innerHTML = WEEK_DAYS.map(l =>
+        `<div class="daily-day">
+          <div class="daily-day-lbl">${l}</div>
+          <div class="daily-day-num" style="color:var(--muted)">—</div>
+          <div class="daily-day-frac">no data</div>
+        </div>`).join("");
     }
 
     // ── Activity feed ─────────────────────────────────────────────────────

@@ -50,6 +50,7 @@ module.exports = async function (context, req) {
 
     const auditEntries  = entries.filter(e => e.workbook === "audit").slice(0, 8);
     const growthEntries = entries.filter(e => e.workbook === "growth").slice(0, 8);
+    const dailyEntries  = entries.filter(e => e.workbook === "daily");
 
     // ── Audit stats ───────────────────────────────────────────────────────
     let auditStats = null;
@@ -96,6 +97,30 @@ module.exports = async function (context, req) {
       };
     }
 
+    // ── Daily plan stats ──────────────────────────────────────────────────
+    const currentWeekStr = toISOWeek();
+    const dailyEntry = dailyEntries.find(e => e.isoWeek === currentWeekStr) || dailyEntries[0] || null;
+    let dailyStats = null;
+    if (dailyEntry) {
+      const days = (dailyEntry.data || {}).days || [];
+      const dayStats = days.map(d => {
+        const all = [...(d.advance || []), ...(d.create || [])].filter(t => t.text && t.text.trim());
+        return {
+          label:   (d.label || "").substring(0, 3),
+          checked: all.filter(t => t.checked).length,
+          total:   all.length,
+          hours:   Math.round(((parseFloat(d.advanceHours)||0) + (parseFloat(d.createHours)||0)) * 10) / 10,
+        };
+      });
+      dailyStats = {
+        isoWeek:       dailyEntry.isoWeek,
+        isCurrentWeek: dailyEntry.isoWeek === currentWeekStr,
+        days:          dayStats,
+        totalChecked:  dayStats.reduce((s, d) => s + d.checked, 0),
+        totalHours:    Math.round(dayStats.reduce((s, d) => s + d.hours, 0) * 10) / 10,
+      };
+    }
+
     // ── Recent activity ───────────────────────────────────────────────────
     const recentActivity = entries.slice(0, 5).map(e => ({
       workbook: e.workbook,
@@ -120,6 +145,7 @@ module.exports = async function (context, req) {
         lastSeen:       meta ? (meta.lastSeen || null) : null,
         audit:          auditStats,
         growth:         growthStats,
+        daily:          dailyStats,
         auditSparkline,
         recentActivity,
       },
@@ -159,6 +185,14 @@ function buildSummary(entry) {
     const filled = countFilled(entry.data || {});
     const pct = Math.min(100, Math.round((filled / GROWTH_FIELD_COUNT) * 100));
     return `${pct}% complete · ${weekLabel(entry.isoWeek)}`;
+  }
+  if (entry.workbook === "daily") {
+    const days = Array.isArray((entry.data || {}).days) ? entry.data.days : [];
+    const totalChecked = days.reduce((s, day) =>
+      s + [...(day.advance||[]), ...(day.create||[])].filter(t => t.checked).length, 0);
+    const totalHrs = Math.round(days.reduce((s, day) =>
+      s + (parseFloat(day.advanceHours)||0) + (parseFloat(day.createHours)||0), 0) * 10) / 10;
+    return `${totalChecked} tasks done · ${totalHrs}h RGA`;
   }
   return entry.isoWeek;
 }
