@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Integrid — Daily Plan</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Syne', system-ui, sans-serif;
+  background: linear-gradient(150deg, #F0F6FF 0%, #EEF2FF 50%, #F5F3FF 100%);
+  min-height: 100vh;
+  padding: 24px 20px 60px;
+  color: #1E293B;
+}
+input, textarea, select { font-family: inherit; }
+::placeholder { color: #CBD5E1; }
+textarea { resize: vertical; }
+
+/* ── LAYOUT ── */
+.app { max-width: 1020px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+/* ── TOP BAR ── */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px;
+}
+.topbar-left h1 { font-size: 26px; font-weight: 800; color: #1E3A5F; letter-spacing: -0.02em; }
+.topbar-left p  { font-size: 12px; color: #64748B; margin-top: 3px; }
+.topbar-right   { display: flex; align-items: center; gap: 10px; }
+
+.pdf-btn {
+  display: flex; align-items: center; gap: 8px;
+  background: linear-gradient(135deg, #1E3A5F, #2563EB);
+  color: white; border: none; border-radius: 10px;
+  padding: 10px 18px; cursor: pointer;
+  font-size: 12px; font-weight: 800; font-family: inherit;
+  box-shadow: 0 4px 14px rgba(37,99,235,0.3);
+  transition: transform 0.1s;
+}
+.pdf-btn:active { transform: scale(0.97); }
+
+/* ── WEEK BAND ── */
+.week-band {
+  background: white; border-radius: 12px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  padding: 14px 20px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  flex-wrap: wrap;
+}
+.week-label-group { display: flex; align-items: center; gap: 10px; }
+.week-dot { width: 8px; height: 8px; border-radius: 50%; background: linear-gradient(135deg, #1E3A5F, #2563EB); }
+.week-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: #94A3B8; }
+.week-range { font-size: 14px; font-weight: 800; color: #1E3A5F; }
+.week-stats { display: flex; gap: 20px; }
+.wstat { text-align: center; }
+.wstat-val { font-size: 22px; font-weight: 800; color: #2563EB; line-height: 1; }
+.wstat-lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #94A3B8; margin-top: 2px; }
+
+/* ── MAIN BODY ── */
+.body-layout { display: grid; grid-template-columns: 260px 1fr; gap: 18px; align-items: start; }
+
+/* ── SIDEBAR — PRIORITIZATION ── */
+.sidebar { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 20px; }
+.sidebar-card {
+  background: white; border-radius: 14px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 2px 14px rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+.sidebar-header {
+  padding: 13px 16px 10px;
+  border-bottom: 1px solid #E2E8F0;
+  display: flex; align-items: center; gap: 8px;
+}
+.sidebar-stripe { width: 4px; height: 20px; border-radius: 2px; flex-shrink: 0; }
+.sidebar-header h3 {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: #94A3B8; flex: 1;
+}
+.sidebar-body { padding: 14px 16px; }
+
+.pri-section { margin-bottom: 16px; }
+.pri-section:last-child { margin-bottom: 0; }
+.pri-section-lbl {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase; color: #94A3B8;
+  margin-bottom: 10px; padding-bottom: 7px; border-bottom: 1px solid #F1F5F9;
+}
+.pri-item { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+.pri-item:last-child { margin-bottom: 0; }
+.pri-num {
+  width: 20px; height: 20px; border-radius: 5px;
+  background: #EFF6FF; border: 1px solid #BFDBFE;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; color: #2563EB; flex-shrink: 0;
+}
+.pri-num.acc { background: #EFF6FF; border-color: #BFDBFE; color: #2563EB; }
+.pri-num.deal { background: #F0FDF4; border-color: #A7F3D0; color: #059669; }
+.pri-input {
+  flex: 1; border: 1.5px solid #E2E8F0; border-radius: 7px;
+  padding: 6px 9px; font-size: 11px; color: #1E293B;
+  background: #FAFBFC; outline: none; font-family: inherit;
+  transition: border-color 0.15s, background 0.15s;
+}
+.pri-input:focus { border-color: #2563EB; background: white; }
+.pri-input.deal:focus { border-color: #059669; }
+
+/* ── DAY COLUMN ── */
+.day-area { display: flex; flex-direction: column; gap: 14px; }
+
+/* ── DAY TAB NAV ── */
+.day-tabs {
+  display: flex; gap: 0;
+  background: white; border-radius: 12px;
+  border: 1px solid #E2E8F0;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+.day-tab {
+  flex: 1; border: none; background: transparent; cursor: pointer;
+  padding: 13px 8px; font-family: inherit;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; color: #94A3B8;
+  border-right: 1px solid #E2E8F0;
+  transition: background 0.15s, color 0.15s;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.day-tab:last-child { border-right: none; }
+.day-tab .tab-date { font-size: 9px; color: #CBD5E1; letter-spacing: 0.1em; }
+.day-tab.active { background: #EFF6FF; color: #2563EB; box-shadow: inset 0 -2px 0 #2563EB; }
+.day-tab.active .tab-date { color: #93C5FD; }
+.day-tab:hover:not(.active) { background: #F8FAFC; color: #64748B; }
+.day-tab .tab-score {
+  width: 16px; height: 16px; border-radius: 4px;
+  font-size: 8px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+}
+.tab-score.empty  { background: #F1F5F9; color: #CBD5E1; }
+.tab-score.partial { background: #FEF9C3; color: #A16207; }
+.tab-score.full   { background: #DCFCE7; color: #166534; }
+
+/* ── DAY PANEL ── */
+.day-panel { display: none; flex-direction: column; gap: 14px; }
+.day-panel.active { display: flex; }
+
+/* ── DAY HEADER BAND ── */
+.day-header-band { border-radius: 12px; overflow: hidden; box-shadow: 0 3px 14px rgba(0,0,0,0.09); }
+.day-header-inner {
+  padding: 16px 20px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.dh-left { display: flex; align-items: center; gap: 12px; }
+.dh-day  { font-size: 22px; font-weight: 800; color: white; }
+.dh-date { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.6); margin-top: 1px; }
+.dh-hours-group {
+  display: flex; gap: 12px; align-items: center;
+  background: rgba(255,255,255,0.12); border-radius: 10px;
+  padding: 9px 14px; border: 1px solid rgba(255,255,255,0.18);
+}
+.dh-hours-field { text-align: center; }
+.dh-hours-lbl { font-size: 8px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.55); margin-bottom: 4px; }
+.dh-hours-input {
+  width: 52px; border: 1.5px solid rgba(255,255,255,0.25); border-radius: 7px;
+  background: rgba(255,255,255,0.12); color: white;
+  font-size: 18px; font-weight: 800; font-family: inherit;
+  text-align: center; outline: none; padding: 4px 2px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.dh-hours-input::placeholder { color: rgba(255,255,255,0.3); }
+.dh-hours-input:focus { border-color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.2); }
+.dh-sep { width: 1px; height: 30px; background: rgba(255,255,255,0.2); }
+
+/* ── TASK CARD ── */
+.task-card {
+  background: white; border-radius: 12px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  overflow: hidden;
+}
+.task-card-header {
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid #E2E8F0;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.task-card-title-row { display: flex; align-items: center; gap: 8px; }
+.task-stripe { width: 4px; height: 20px; border-radius: 2px; flex-shrink: 0; }
+.task-card-title { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #94A3B8; }
+.task-card-desc { font-size: 10px; color: #CBD5E1; font-style: italic; }
+.task-card-body { padding: 12px 16px; }
+
+/* ── TASK ROWS ── */
+.task-list { display: flex; flex-direction: column; gap: 6px; }
+.task-row { display: flex; align-items: center; gap: 8px; }
+.task-check {
+  width: 20px; height: 20px; border-radius: 5px; flex-shrink: 0;
+  border: 1.5px solid #E2E8F0; background: #FAFBFC; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; transition: background 0.12s, border-color 0.12s;
+}
+.task-check.checked { background: #059669; border-color: #059669; color: white; }
+.task-input {
+  flex: 1; border: 1.5px solid #E2E8F0; border-radius: 7px;
+  padding: 7px 10px; font-size: 12px; color: #1E293B;
+  background: #FAFBFC; outline: none; font-family: inherit;
+  transition: border-color 0.15s, background 0.15s;
+  text-decoration: none;
+}
+.task-input:focus { border-color: #2563EB; background: white; }
+.task-input.done-style { text-decoration: line-through; color: #94A3B8; background: #F8FAFC; }
+.task-input.advance:focus { border-color: #2563EB; }
+.task-input.create:focus  { border-color: #059669; }
+
+/* ── HOURS FOOTER ── */
+.task-hours-row {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 10px; padding-top: 10px; border-top: 1px solid #F1F5F9;
+}
+.task-hours-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #94A3B8; }
+.task-hours-input {
+  width: 70px; border: 1.5px solid #E2E8F0; border-radius: 7px;
+  padding: 5px 8px; font-size: 13px; font-weight: 700; color: #1E293B;
+  background: #FAFBFC; outline: none; font-family: inherit;
+  text-align: center; transition: border-color 0.15s, background 0.15s;
+}
+.task-hours-input:focus { border-color: #2563EB; background: white; }
+.task-hours-unit { font-size: 11px; color: #94A3B8; font-weight: 600; }
+
+/* ── PROGRESS BAR ── */
+.progress-wrap {
+  background: white; border-radius: 10px; border: 1px solid #E2E8F0;
+  padding: 12px 18px;
+  display: flex; align-items: center; gap: 16px;
+}
+.progress-label { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #94A3B8; white-space: nowrap; }
+.progress-bar { flex: 1; height: 6px; background: #E2E8F0; border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #2563EB, #059669); border-radius: 3px; transition: width 0.4s ease; }
+.progress-pct { font-size: 13px; font-weight: 800; color: #2563EB; min-width: 36px; text-align: right; }
+
+/* ── PRINT ── */
+@media print {
+  @page { size: letter landscape; margin: 0.45in; }
+  body { background: white !important; padding: 0; }
+  .no-print { display: none !important; }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  .body-layout { grid-template-columns: 220px 1fr; }
+  .day-tabs { display: none !important; }
+  .day-panel { display: flex !important; }
+  .day-panel + .day-panel { page-break-before: auto; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- TOP BAR -->
+  <div class="topbar no-print">
+    <div class="topbar-left">
+      <h1>Daily Plan</h1>
+      <p>Integrid · Pipeline advancement + new pipeline creation · Week-over-week momentum</p>
+    </div>
+    <div class="topbar-right">
+      <div id="saveStatus" style="font-size:11px;font-weight:700;letter-spacing:0.07em;color:#94A3B8;transition:color 0.3s;">Connecting…</div>
+      <button class="pdf-btn" onclick="exportPDF()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M6 9l6 6 6-6M3 19h18"/></svg>
+        Save as PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-wrap no-print">
+    <span class="progress-label">Week Completion</span>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <span class="progress-pct" id="progressPct">0%</span>
+  </div>
+
+  <!-- WEEK BAND -->
+  <div class="week-band">
+    <div class="week-label-group">
+      <div class="week-dot"></div>
+      <div>
+        <div class="week-lbl">Current Week</div>
+        <div class="week-range" id="weekRangeDisplay">—</div>
+      </div>
+    </div>
+    <div class="week-stats">
+      <div class="wstat">
+        <div class="wstat-val" id="statAdvanceHrs">0</div>
+        <div class="wstat-lbl">Advance Hrs</div>
+      </div>
+      <div class="wstat">
+        <div class="wstat-val" id="statCreateHrs" style="color:#059669">0</div>
+        <div class="wstat-lbl">Create Hrs</div>
+      </div>
+      <div class="wstat">
+        <div class="wstat-val" id="statTotalHrs" style="color:#1E3A5F">0</div>
+        <div class="wstat-lbl">Total RGA</div>
+      </div>
+      <div class="wstat">
+        <div class="wstat-val" id="statChecked" style="color:#F59E0B">0</div>
+        <div class="wstat-lbl">Tasks Done</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN BODY -->
+  <div class="body-layout">
+
+    <!-- SIDEBAR: PRIORITIZATION -->
+    <div class="sidebar">
+      <div class="sidebar-card">
+        <div class="sidebar-header">
+          <div class="sidebar-stripe" style="background:linear-gradient(180deg,#1E3A5F,#2563EB)"></div>
+          <h3>Prioritization</h3>
+        </div>
+        <div class="sidebar-body">
+          <div class="pri-section">
+            <div class="pri-section-lbl">Top Accounts</div>
+            <div id="accountsList"></div>
+          </div>
+          <div class="pri-section">
+            <div class="pri-section-lbl">Top Deals</div>
+            <div id="dealsList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DAY COLUMNS -->
+    <div class="day-area">
+
+      <!-- DAY TABS -->
+      <div class="day-tabs no-print" id="dayTabs">
+        <!-- injected by JS -->
+      </div>
+
+      <!-- DAY PANELS -->
+      <div id="dayPanels">
+        <!-- injected by JS -->
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+// ── DATA MODEL ────────────────────────────────────────────────────────────────
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+const TASK_COUNT = 5; // tasks per section per day
+
+// State
+let state = {
+  accounts: Array(5).fill(''),
+  deals:    Array(5).fill(''),
+  days: DAYS.map(d => ({
+    name:    d,
+    advanceHours: '',
+    createHours:  '',
+    advance: Array(TASK_COUNT).fill('').map(() => ({ text: '', checked: false })),
+    create:  Array(TASK_COUNT).fill('').map(() => ({ text: '', checked: false })),
+  }))
+};
+
+// ── ISO WEEK ──────────────────────────────────────────────────────────────────
+function currentISOWeek() {
+  const now = new Date();
+  const d   = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const day = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+  const yr  = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const wk  = Math.ceil((((d - yr) / 86400000) + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(wk).padStart(2, '0')}`;
+}
+
+function weekRangeFromISO(isoWeek) {
+  if (!isoWeek) return '';
+  try {
+    const [yr, wStr] = isoWeek.split('-W');
+    const wn   = parseInt(wStr, 10);
+    const jan4 = new Date(Date.UTC(parseInt(yr, 10), 0, 4));
+    const dow  = jan4.getUTCDay() || 7;
+    const mon  = new Date(jan4);
+    mon.setUTCDate(jan4.getUTCDate() - dow + 1 + (wn - 1) * 7);
+    const fri = new Date(mon); fri.setUTCDate(mon.getUTCDate() + 4);
+    const fmt  = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return `${fmt(mon)} – ${fmt(fri)}, ${fri.getFullYear()}`;
+  } catch { return isoWeek; }
+}
+
+// Date labels for each weekday
+function dayDates(isoWeek) {
+  if (!isoWeek) return DAYS.map(() => '');
+  try {
+    const [yr, wStr] = isoWeek.split('-W');
+    const wn   = parseInt(wStr, 10);
+    const jan4 = new Date(Date.UTC(parseInt(yr, 10), 0, 4));
+    const dow  = jan4.getUTCDay() || 7;
+    const mon  = new Date(jan4);
+    mon.setUTCDate(jan4.getUTCDate() - dow + 1 + (wn - 1) * 7);
+    return DAYS.map((_, i) => {
+      const d = new Date(mon); d.setUTCDate(mon.getUTCDate() + i);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+  } catch { return DAYS.map(() => ''); }
+}
+
+// ── RENDER SIDEBAR ────────────────────────────────────────────────────────────
+function renderSidebar() {
+  const accList  = document.getElementById('accountsList');
+  const dealList = document.getElementById('dealsList');
+  if (!accList || !dealList) return;
+
+  accList.innerHTML = '';
+  state.accounts.forEach((val, i) => {
+    const row = document.createElement('div'); row.className = 'pri-item';
+    const num = document.createElement('div'); num.className = 'pri-num acc'; num.textContent = i + 1;
+    const inp = document.createElement('input');
+    inp.className = 'pri-input'; inp.type = 'text'; inp.placeholder = 'Account name…';
+    inp.value = val;
+    inp.addEventListener('input', e => { state.accounts[i] = e.target.value; updateStats(); });
+    row.appendChild(num); row.appendChild(inp); accList.appendChild(row);
+  });
+
+  dealList.innerHTML = '';
+  state.deals.forEach((val, i) => {
+    const row = document.createElement('div'); row.className = 'pri-item';
+    const num = document.createElement('div'); num.className = 'pri-num deal'; num.textContent = i + 1;
+    const inp = document.createElement('input');
+    inp.className = 'pri-input deal'; inp.type = 'text'; inp.placeholder = 'Deal / opportunity…';
+    inp.value = val;
+    inp.addEventListener('input', e => { state.deals[i] = e.target.value; updateStats(); });
+    row.appendChild(num); row.appendChild(inp); dealList.appendChild(row);
+  });
+}
+
+// ── RENDER DAYS ───────────────────────────────────────────────────────────────
+let _isoWeek = null;
+
+function renderDays() {
+  const dates = dayDates(_isoWeek);
+  renderDayTabs(dates);
+  renderDayPanels(dates);
+}
+
+function renderDayTabs(dates) {
+  const tabs = document.getElementById('dayTabs');
+  if (!tabs) return;
+  tabs.innerHTML = '';
+  DAYS.forEach((day, di) => {
+    const btn = document.createElement('button');
+    btn.className = 'day-tab' + (di === 0 ? ' active' : '');
+    btn.setAttribute('data-di', di);
+
+    const score   = dayScore(di);
+    const scoreCls = score === 0 ? 'empty' : score < 1 ? 'partial' : 'full';
+    const scoreTxt = score === 0 ? '—' : Math.round(score * 100) + '%';
+
+    btn.innerHTML = `
+      <span class="tab-date">${dates[di] || ''}</span>
+      <span>${day.slice(0, 3).toUpperCase()}</span>
+      <span class="tab-score ${scoreCls}">${scoreTxt}</span>
+    `;
+    btn.addEventListener('click', () => switchDay(di));
+    tabs.appendChild(btn);
+  });
+}
+
+function renderDayPanels(dates) {
+  const container = document.getElementById('dayPanels');
+  if (!container) return;
+  container.innerHTML = '';
+
+  DAYS.forEach((day, di) => {
+    const d     = state.days[di];
+    const panel = document.createElement('div');
+    panel.className = 'day-panel' + (di === 0 ? ' active' : '');
+    panel.id = `panel-${di}`;
+
+    const gradients = [
+      'linear-gradient(135deg,#1E3A5F,#2563EB)',
+      'linear-gradient(135deg,#1E3A5F,#7C3AED)',
+      'linear-gradient(135deg,#1E3A5F,#059669)',
+      'linear-gradient(135deg,#7C3AED,#2563EB)',
+      'linear-gradient(135deg,#059669,#2563EB)',
+    ];
+
+    panel.innerHTML = `
+      <div class="day-header-band">
+        <div class="day-header-inner" style="background:${gradients[di]}">
+          <div class="dh-left">
+            <div>
+              <div class="dh-day">${day}</div>
+              <div class="dh-date">${dates[di] || ''}</div>
+            </div>
+          </div>
+          <div class="dh-hours-group">
+            <div class="dh-hours-field">
+              <div class="dh-hours-lbl">Advance Hrs</div>
+              <input class="dh-hours-input" type="text" placeholder="0"
+                id="advHrs-${di}" value="${d.advanceHours}"
+                oninput="state.days[${di}].advanceHours=this.value;updateStats();">
+            </div>
+            <div class="dh-sep"></div>
+            <div class="dh-hours-field">
+              <div class="dh-hours-lbl">Create Hrs</div>
+              <input class="dh-hours-input" type="text" placeholder="0"
+                id="crtHrs-${di}" value="${d.createHours}"
+                oninput="state.days[${di}].createHours=this.value;updateStats();">
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Advance pipeline task card
+    panel.appendChild(makeTaskCard(di, 'advance'));
+    // Create new pipeline task card
+    panel.appendChild(makeTaskCard(di, 'create'));
+
+    container.appendChild(panel);
+  });
+}
+
+function makeTaskCard(di, type) {
+  const isAdvance = type === 'advance';
+  const card = document.createElement('div'); card.className = 'task-card';
+  const header = document.createElement('div'); header.className = 'task-card-header';
+  header.innerHTML = `
+    <div class="task-card-title-row">
+      <div class="task-stripe" style="background:${isAdvance ? 'linear-gradient(180deg,#1E3A5F,#2563EB)' : 'linear-gradient(180deg,#059669,#06B6D4)'}"></div>
+      <span class="task-card-title">${isAdvance ? 'Tasks to Advance My Pipeline' : 'Tasks to Create New Pipeline'}</span>
+    </div>
+    <span class="task-card-desc">${isAdvance ? 'Move active deals forward' : 'Identify & engage new prospects'}</span>
+  `;
+  card.appendChild(header);
+
+  const body = document.createElement('div'); body.className = 'task-card-body';
+  const list = document.createElement('div'); list.className = 'task-list';
+
+  const tasks = state.days[di][type];
+  tasks.forEach((task, ti) => {
+    const row = document.createElement('div'); row.className = 'task-row';
+
+    const chk = document.createElement('div');
+    chk.className = 'task-check' + (task.checked ? ' checked' : '');
+    chk.textContent = task.checked ? '✓' : '';
+    chk.addEventListener('click', () => {
+      state.days[di][type][ti].checked = !state.days[di][type][ti].checked;
+      chk.classList.toggle('checked');
+      chk.textContent = state.days[di][type][ti].checked ? '✓' : '';
+      inp.classList.toggle('done-style', state.days[di][type][ti].checked);
+      updateStats();
+    });
+
+    const inp = document.createElement('input');
+    inp.type = 'text'; inp.className = `task-input ${type}`;
+    inp.placeholder = isAdvance ? 'Follow up with…' : 'Prospect…';
+    inp.value = task.text;
+    if (task.checked) inp.classList.add('done-style');
+    inp.addEventListener('input', e => {
+      state.days[di][type][ti].text = e.target.value;
+      updateStats();
+    });
+
+    row.appendChild(chk); row.appendChild(inp); list.appendChild(row);
+  });
+
+  body.appendChild(list);
+
+  // Hours footer
+  const hrsRow = document.createElement('div'); hrsRow.className = 'task-hours-row';
+  const hrsLbl = document.createElement('span'); hrsLbl.className = 'task-hours-lbl'; hrsLbl.textContent = 'Hours:';
+  const hrsInp = document.createElement('input');
+  hrsInp.className = 'task-hours-input'; hrsInp.type = 'text'; hrsInp.placeholder = '0';
+  hrsInp.id = `${type}SectionHrs-${di}`;
+  hrsInp.value = type === 'advance' ? state.days[di].advanceHours : state.days[di].createHours;
+  hrsInp.addEventListener('input', e => {
+    const key = type === 'advance' ? 'advanceHours' : 'createHours';
+    state.days[di][key] = e.target.value;
+    // Sync with header input
+    const headerInp = document.getElementById(type === 'advance' ? `advHrs-${di}` : `crtHrs-${di}`);
+    if (headerInp) headerInp.value = e.target.value;
+    updateStats();
+  });
+  const hrsUnit = document.createElement('span'); hrsUnit.className = 'task-hours-unit'; hrsUnit.textContent = 'hrs';
+
+  hrsRow.appendChild(hrsLbl); hrsRow.appendChild(hrsInp); hrsRow.appendChild(hrsUnit);
+  body.appendChild(hrsRow);
+  card.appendChild(body);
+  return card;
+}
+
+function switchDay(di) {
+  document.querySelectorAll('.day-tab').forEach((t, i) => t.classList.toggle('active', i === di));
+  document.querySelectorAll('.day-panel').forEach((p, i) => p.classList.toggle('active', i === di));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── STATS ─────────────────────────────────────────────────────────────────────
+function dayScore(di) {
+  const d = state.days[di];
+  const allTasks = [...d.advance, ...d.create].filter(t => t.text.trim());
+  if (allTasks.length === 0) return 0;
+  const done = allTasks.filter(t => t.checked).length;
+  return done / allTasks.length;
+}
+
+function updateStats() {
+  let totalAdv = 0, totalCrt = 0, totalChecked = 0;
+  state.days.forEach((d, di) => {
+    totalAdv += parseFloat(d.advanceHours) || 0;
+    totalCrt += parseFloat(d.createHours)  || 0;
+    totalChecked += [...d.advance, ...d.create].filter(t => t.checked).length;
+  });
+
+  document.getElementById('statAdvanceHrs').textContent = totalAdv.toFixed(1).replace(/\.0$/, '');
+  document.getElementById('statCreateHrs').textContent  = totalCrt.toFixed(1).replace(/\.0$/, '');
+  document.getElementById('statTotalHrs').textContent   = (totalAdv + totalCrt).toFixed(1).replace(/\.0$/, '');
+  document.getElementById('statChecked').textContent    = totalChecked;
+
+  // Update tab badges
+  document.querySelectorAll('.day-tab').forEach((tab, di) => {
+    const scoreEl = tab.querySelector('.tab-score');
+    if (!scoreEl) return;
+    const score   = dayScore(di);
+    scoreEl.className = 'tab-score ' + (score === 0 ? 'empty' : score < 1 ? 'partial' : 'full');
+    scoreEl.textContent = score === 0 ? '—' : Math.round(score * 100) + '%';
+  });
+
+  updateProgress();
+}
+
+function updateProgress() {
+  let total = 0, filled = 0;
+  state.days.forEach(d => {
+    [...d.advance, ...d.create].forEach(t => {
+      total++;
+      if (t.text.trim()) filled++;
+    });
+  });
+  const pct = total > 0 ? Math.round((filled / total) * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressPct').textContent  = pct + '%';
+}
+
+// ── PDF ───────────────────────────────────────────────────────────────────────
+function exportPDF() {
+  var p = (window.WorkbookStorage && WorkbookStorage.saveNow)
+    ? WorkbookStorage.saveNow() : Promise.resolve();
+  p.then(function() { window.print(); });
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+function init() {
+  const urlWeek = new URLSearchParams(window.location.search).get('week');
+  _isoWeek = urlWeek || currentISOWeek();
+  document.getElementById('weekRangeDisplay').textContent = weekRangeFromISO(_isoWeek);
+  renderSidebar();
+  renderDays();
+  updateStats();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+<script src="workbook-storage.js"></script>
+<script>
+// ── STORAGE WIRING — Daily Plan ───────────────────────────────────────────────
+(function () {
+  function collect() {
+    return {
+      accounts: state.accounts.slice(),
+      deals:    state.deals.slice(),
+      days:     state.days.map(d => ({
+        name:         d.name,
+        advanceHours: d.advanceHours,
+        createHours:  d.createHours,
+        advance:      d.advance.map(t => ({ text: t.text, checked: t.checked })),
+        create:       d.create.map(t  => ({ text: t.text, checked: t.checked })),
+      })),
+    };
+  }
+
+  function populate(data) {
+    if (!data || typeof data !== 'object') return;
+    if (Array.isArray(data.accounts)) state.accounts = data.accounts.slice();
+    if (Array.isArray(data.deals))    state.deals    = data.deals.slice();
+    if (Array.isArray(data.days)) {
+      data.days.forEach((saved, di) => {
+        if (!state.days[di]) return;
+        state.days[di].advanceHours = saved.advanceHours || '';
+        state.days[di].createHours  = saved.createHours  || '';
+        if (Array.isArray(saved.advance)) {
+          saved.advance.forEach((t, ti) => {
+            if (state.days[di].advance[ti]) state.days[di].advance[ti] = { text: t.text || '', checked: !!t.checked };
+          });
+        }
+        if (Array.isArray(saved.create)) {
+          saved.create.forEach((t, ti) => {
+            if (state.days[di].create[ti]) state.days[di].create[ti] = { text: t.text || '', checked: !!t.checked };
+          });
+        }
+      });
+    }
+    renderSidebar();
+    renderDays();
+    updateStats();
+  }
+
+  window.addEventListener('load', function () {
+    WorkbookStorage.init('daily', collect, populate);
+  });
+})();
+</script>
+
+</body>
+</html>
