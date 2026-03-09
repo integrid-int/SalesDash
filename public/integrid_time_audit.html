@@ -312,8 +312,8 @@ const state = {
   },
   obsData: { rga_actual:'', top_drain:'', cut_now:'' },
   planExtras: { leaks:['',''], blocks:[''], rules:[] },
-  lastDate: '',
-  goalDate: '',
+  lastDate: (function(){ var d=new Date(),dy=d.getDay(); d.setDate(d.getDate()-((dy+6)%7)); return d.toISOString().slice(0,10); })(),
+  goalDate: (function(){ var d=new Date(),dy=d.getDay(); d.setDate(d.getDate()-((dy+6)%7)+7); return d.toISOString().slice(0,10); })(),
 };
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -996,6 +996,12 @@ function exportPDF() {
   }
 
   window.addEventListener("load", function() {
+    // Pre-fill date inputs with current/next week defaults; populate() overrides if saved data exists
+    var ldEl = document.getElementById("lastDate");
+    var gdEl = document.getElementById("goalDate");
+    if (ldEl) ldEl.value = state.lastDate;
+    if (gdEl) gdEl.value = state.goalDate;
+    onDateChange();
     WorkbookStorage.init("audit", collect, populate);
   });
 })();
