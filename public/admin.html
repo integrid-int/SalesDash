@@ -251,7 +251,14 @@ let allEntries = [];
 let currentFilter = "all";
 
 // ── Boot ───────────────────────────────────────────────────────────────────────
-window.addEventListener("load", loadEntries);
+window.addEventListener("load", async function () {
+  const me = await fetch("/.auth/me").then(r => r.json()).catch(() => ({}));
+  if (!me.clientPrincipal) {
+    window.location.href = "/.auth/login/aad?post_login_redirect_uri=/admin.html";
+    return;
+  }
+  loadEntries();
+});
 
 async function loadEntries() {
   setLoading(true);

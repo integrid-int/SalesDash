@@ -742,7 +742,7 @@ async function loadUser() {
     const res  = await fetch("/.auth/me");
     const json = await res.json();
     const user = json.clientPrincipal || null;
-    if (!user) return;
+    if (!user) { window.location.href = "/.auth/login/aad?post_login_redirect_uri=/"; return; }
     const name = user.userDetails || "User";
     document.getElementById("navUserName").textContent = name.split("@")[0];
     document.getElementById("navAvatar").textContent   = name[0].toUpperCase();
