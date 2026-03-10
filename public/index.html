@@ -87,37 +87,37 @@ nav {
 /* ── HERO ── */
 .hero {
   position: relative; z-index: 1; overflow: hidden;
-  min-height: 100vh; display: flex; align-items: center;
-  padding: 100px 44px 72px; max-width: 1120px; margin: 0 auto;
+  min-height: auto; display: flex; align-items: center;
+  padding: 88px 44px 32px; max-width: 1120px; margin: 0 auto;
 }
 .blob { position: absolute; border-radius: 50%; filter: blur(100px); pointer-events: none; }
-.blob-a { width: 500px; height: 500px; background: rgba(37,99,235,0.1); top: -80px; right: -80px; }
-.blob-b { width: 300px; height: 300px; background: rgba(6,182,212,0.07); bottom: 60px; left: 60px; }
+.blob-a { width: 380px; height: 380px; background: rgba(37,99,235,0.09); top: -40px; right: -60px; }
+.blob-b { width: 200px; height: 200px; background: rgba(6,182,212,0.06); bottom: 20px; left: 40px; }
 
-.hero-content { max-width: 640px; }
+.hero-content { max-width: 700px; }
 .hero-eyebrow {
-  display: flex; align-items: center; gap: 12px; margin-bottom: 24px;
+  display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
   animation: up .5s ease both;
 }
-.ey-line { width: 32px; height: 2px; background: linear-gradient(90deg, var(--blue), var(--cyan)); }
+.ey-line { width: 24px; height: 2px; background: linear-gradient(90deg, var(--blue), var(--cyan)); }
 .ey-txt { font-size: 10px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--cyan); }
 .hero h1 {
-  font-size: clamp(54px, 8.5vw, 96px);
-  font-weight: 800; line-height: 0.94; letter-spacing: -0.022em;
+  font-size: clamp(32px, 4.5vw, 54px);
+  font-weight: 800; line-height: 1; letter-spacing: -0.022em;
   animation: up .5s .08s ease both;
 }
 .hero h1 .grad {
-  display: block;
+  display: inline;
   background: linear-gradient(90deg, var(--blue) 0%, var(--cyan) 100%);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
 .hero-desc {
-  margin-top: 24px; font-size: 15px; line-height: 1.78; color: var(--muted);
+  margin-top: 10px; font-size: 13px; line-height: 1.65; color: var(--muted);
   animation: up .5s .16s ease both;
 }
 .hero-desc strong { color: var(--text); font-weight: 600; }
 .hero-chips {
-  margin-top: 24px; display: flex; flex-wrap: wrap; gap: 9px;
+  margin-top: 14px; display: flex; flex-wrap: wrap; gap: 7px;
   animation: up .5s .22s ease both;
 }
 .chip {
@@ -393,6 +393,19 @@ nav {
   padding:4px 10px; border-radius:20px;
 }
 
+/* ── QUICK LAUNCH ── */
+.dash-quicklaunch { display: flex; gap: 6px; align-items: center; }
+.ql-btn {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted); background: var(--dim); border: 1px solid var(--edge);
+  border-radius: 7px; padding: 5px 10px; cursor: pointer; font-family: inherit;
+  transition: color .14s, background .14s, border-color .14s;
+  white-space: nowrap;
+}
+.ql-btn:hover { color: var(--text); background: rgba(37,99,235,.18); border-color: rgba(37,99,235,.3); }
+@media (max-width:768px) { .ql-btn span.ql-label { display: none; } .ql-btn { padding: 5px 8px; } }
+
 /* ── FOOTER ── */
 footer {
   position:relative; z-index:1; max-width:1120px; margin:0 auto;
@@ -433,7 +446,7 @@ footer {
 /* ── RESPONSIVE ── */
 @media (max-width:768px) {
   nav, .hero, .dash-wrap, .wbs, footer { padding-left:18px; padding-right:18px; }
-  .hero { padding-top:90px; min-height:auto; padding-bottom:48px; }
+  .hero { padding-top:80px; padding-bottom:24px; }
   .dash-strip { grid-template-columns:1fr 1fr; }
   .ds-cell:nth-child(2) { border-right:none; }
   .dash-cards { grid-template-columns:1fr; }
@@ -488,7 +501,15 @@ footer {
 <div class="dash-wrap">
   <div class="dash-header">
     <div class="dash-title">Your Dashboard</div>
-    <div class="dash-week" id="dashWeekLabel">Loading…</div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="dash-week" id="dashWeekLabel">Loading…</div>
+      <div class="dash-quicklaunch">
+        <button class="ql-btn" onclick="openTool('daily','Daily Plan')">📋 <span class="ql-label">Daily</span></button>
+        <button class="ql-btn" onclick="openTool('audit','Time Audit &amp; RGA Redesign')">⏱ <span class="ql-label">Time Audit</span></button>
+        <button class="ql-btn" onclick="openTool('growth','Weekly Growth Workbook')">📈 <span class="ql-label">Growth</span></button>
+        <button class="ql-btn" onclick="openTool('push','12-Week Push')">🎯 <span class="ql-label">12-Week</span></button>
+      </div>
+    </div>
   </div>
 
   <!-- Metric strip -->
@@ -511,9 +532,24 @@ footer {
       <div class="ds-sub" id="dsGrowthSub"><span class="skeleton skel-sub"></span></div>
     </div>
     <div class="ds-cell">
-      <div class="ds-lbl">Total Entries</div>
-      <div class="ds-val" id="dsTotal" style="color:var(--text)"><span class="skeleton skel-val"></span></div>
+      <div class="ds-lbl">Tasks Done</div>
+      <div class="ds-val" id="dsTotal" style="color:var(--cyan)"><span class="skeleton skel-val"></span></div>
       <div class="ds-sub" id="dsTotalSub"><span class="skeleton skel-sub"></span></div>
+    </div>
+  </div>
+
+  <!-- Daily Plan strip (highest-frequency workbook — shown first) -->
+  <div class="daily-card">
+    <div class="daily-card-header">
+      <div class="daily-card-title">📋 Daily Plan — This Week</div>
+      <span class="dash-card-badge badge-muted" id="dailyBadge">Loading…</span>
+    </div>
+    <div class="daily-strip" id="dailyStrip">
+      <div class="daily-day"><div class="daily-day-lbl">Mon</div><div class="daily-day-num skeleton skel-val" style="height:28px;width:40px;margin:0 auto"></div></div>
+      <div class="daily-day"><div class="daily-day-lbl">Tue</div><div class="daily-day-num skeleton skel-val" style="height:28px;width:40px;margin:0 auto"></div></div>
+      <div class="daily-day"><div class="daily-day-lbl">Wed</div><div class="daily-day-num skeleton skel-val" style="height:28px;width:40px;margin:0 auto"></div></div>
+      <div class="daily-day"><div class="daily-day-lbl">Thu</div><div class="daily-day-num skeleton skel-val" style="height:28px;width:40px;margin:0 auto"></div></div>
+      <div class="daily-day"><div class="daily-day-lbl">Fri</div><div class="daily-day-num skeleton skel-val" style="height:28px;width:40px;margin:0 auto"></div></div>
     </div>
   </div>
 
@@ -557,29 +593,6 @@ footer {
           <div class="prog-bar"><div class="prog-fill" id="growthProgFill" style="width:0%"></div></div>
         </div>
       </div>
-    </div>
-  </div>
-
-  <!-- Daily Plan strip -->
-  <div class="daily-card">
-    <div class="daily-card-header">
-      <div class="daily-card-title">📋 Daily Plan — This Week</div>
-      <span class="dash-card-badge badge-gold" id="dailyBadge">Loading…</span>
-    </div>
-    <div class="daily-strip" id="dailyStrip">
-      <div class="daily-day"><div class="daily-day-lbl">Mon</div><div class="daily-day-num skeleton skel-val" style="height:28px;width:40px;margin:0 auto"></div></div>
-      <div class="daily-day"><div class="daily-day-lbl">Tue</div><div class="daily-day-num skeleton skel-val" style="height:28px;width:40px;margin:0 auto"></div></div>
-      <div class="daily-day"><div class="daily-day-lbl">Wed</div><div class="daily-day-num skeleton skel-val" style="height:28px;width:40px;margin:0 auto"></div></div>
-      <div class="daily-day"><div class="daily-day-lbl">Thu</div><div class="daily-day-num skeleton skel-val" style="height:28px;width:40px;margin:0 auto"></div></div>
-      <div class="daily-day"><div class="daily-day-lbl">Fri</div><div class="daily-day-num skeleton skel-val" style="height:28px;width:40px;margin:0 auto"></div></div>
-    </div>
-  </div>
-
-  <!-- Recent activity -->
-  <div class="activity-card">
-    <div class="activity-header">Recent Activity</div>
-    <div class="activity-list" id="activityList">
-      <div class="activity-empty">Loading activity…</div>
     </div>
   </div>
 </div>
@@ -779,7 +792,6 @@ function showDashboardError(msg) {
   document.getElementById("growthSub").textContent    = "Data unavailable";
   document.getElementById("growthBadge").textContent  = "Error";
   document.getElementById("growthBadge").className    = "dash-card-badge badge-muted";
-  document.getElementById("activityList").innerHTML   = '<div class="activity-empty">Could not load activity.</div>';
   const db = document.getElementById("dailyBadge");
   if (db) { db.textContent = "Error"; db.className = "dash-card-badge badge-muted"; }
   const ds = document.getElementById("dailyStrip");
@@ -815,8 +827,9 @@ async function loadDashboard() {
       ? `filled · ${d.growth.weekLabel}`
       : "No data yet";
 
-    document.getElementById("dsTotal").textContent    = `${d.totalEntries}`;
-    document.getElementById("dsTotalSub").textContent = "workbook saves";
+    const tasksThisWeek = d.daily ? d.daily.totalChecked : null;
+    document.getElementById("dsTotal").textContent    = tasksThisWeek !== null ? `${tasksThisWeek}` : "—";
+    document.getElementById("dsTotalSub").textContent = tasksThisWeek !== null ? "tasks done this week" : "open daily plan to start";
 
     // ── Audit card ────────────────────────────────────────────────────────
     if (d.audit) {
@@ -863,7 +876,8 @@ async function loadDashboard() {
     if (d.daily) {
       const dl = d.daily;
       dailyBadge.textContent = dl.isCurrentWeek ? "This week" : dl.isoWeek;
-      dailyBadge.className   = "dash-card-badge badge-gold";
+      const allDone = dl.days.length > 0 && dl.days.every(day => day.total > 0 && day.checked === day.total);
+      dailyBadge.className   = allDone ? "dash-card-badge badge-green" : "dash-card-badge badge-gold";
       const days = dl.days.length > 0 ? dl.days
         : WEEK_DAYS.map(l => ({ label: l, checked: 0, total: 0, hours: 0 }));
       dailyStrip.innerHTML = days.map(day => {
@@ -889,30 +903,6 @@ async function loadDashboard() {
           <div class="daily-day-num" style="color:var(--muted)">—</div>
           <div class="daily-day-frac">no data</div>
         </div>`).join("");
-    }
-
-    // ── Activity feed ─────────────────────────────────────────────────────
-    const list = document.getElementById("activityList");
-    if (!d.recentActivity || d.recentActivity.length === 0) {
-      list.innerHTML = '<div class="activity-empty">No activity yet. Open a workbook to get started.</div>';
-    } else {
-      list.innerHTML = d.recentActivity.map(a => {
-        const isAudit  = a.workbook === "audit";
-        const isPush   = a.workbook === "push";
-        const isDaily  = a.workbook === "daily";
-        const icon     = isAudit ? "⏱" : isPush ? "🎯" : isDaily ? "📋" : "📈";
-        const iconCls  = isAudit ? "ai-audit" : isPush ? "ai-push" : isDaily ? "ai-daily" : "ai-growth";
-        const label    = isAudit ? "Time Audit" : isPush ? "12-Week Push" : isDaily ? "Daily Plan" : "Weekly Growth";
-        return `
-        <div class="activity-item">
-          <div class="activity-icon ${iconCls}">${icon}</div>
-          <div class="activity-text">
-            <div class="activity-wk">${label} · ${a.isoWeek}</div>
-            <div class="activity-sum">${a.summary}</div>
-          </div>
-          <div class="activity-time">${timeSince(a.savedAt)}</div>
-        </div>`;
-      }).join("");
     }
 
   } catch (err) {
