@@ -99,7 +99,7 @@ nav {
   border-radius: 14px; overflow: hidden;
 }
 .entry-list-header {
-  display: grid; grid-template-columns: 36px 110px 1fr 140px 110px 90px;
+  display: grid; grid-template-columns: 36px 110px 1fr 150px 160px;
   padding: 9px 18px;
   background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--edge);
 }
@@ -108,7 +108,7 @@ nav {
 }
 
 .entry-row {
-  display: grid; grid-template-columns: 36px 110px 1fr 140px 110px 90px;
+  display: grid; grid-template-columns: 36px 110px 1fr 150px 160px;
   align-items: center; padding: 0 18px;
   border-bottom: 1px solid rgba(255,255,255,0.04);
   transition: background 0.12s;
@@ -145,7 +145,7 @@ nav {
 .btn-delete:hover { color: #FCA5A5; background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.25); }
 
 /* Confirm inline */
-.confirm-actions { display: flex; gap: 6px; align-items: center; }
+.confirm-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .btn-confirm-yes {
   font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
   color: #FCA5A5; background: rgba(239,68,68,.18); border: 1px solid rgba(239,68,68,.35);
@@ -195,6 +195,8 @@ nav {
   .entry-row { grid-template-columns: 36px 1fr auto; gap: 10px; padding: 12px 14px; }
   .entry-row > .entry-type { display: none; }
   .entry-row > .entry-saved { display: none; }
+  .confirm-actions { gap: 4px; }
+  .btn-confirm-yes, .btn-confirm-no { padding: 5px 8px; }
 }
 </style>
 </head>
@@ -234,7 +236,6 @@ nav {
       <div>Workbook</div>
       <div>Week / Summary</div>
       <div>Saved</div>
-      <div></div>
       <div>Action</div>
     </div>
     <div class="list-loading" id="loadingState">
@@ -303,7 +304,7 @@ function renderList() {
 
   const header = `<div class="entry-list-header">
     <div></div><div>Workbook</div><div>Week / Summary</div>
-    <div>Saved</div><div></div><div>Action</div>
+    <div>Saved</div><div>Action</div>
   </div>`;
 
   const rows = filtered.map(e => entryRowHTML(e)).join("");
@@ -326,11 +327,10 @@ function entryRowHTML(e, confirming = false) {
     <div><div class="entry-icon ${meta.cls}">${meta.icon}</div></div>
     <div class="entry-type">${meta.label}</div>
     <div>
-      <div class="entry-week">${meta.label} · ${e.isoWeek}</div>
+      <div class="entry-week">${e.isoWeek}</div>
       <div class="entry-summary">${e.summary || ""}</div>
     </div>
     <div class="entry-saved">${saved}</div>
-    <div></div>
     <div>${actionCell}</div>
   </div>`;
 }
