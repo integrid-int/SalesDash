@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Integrid — Sign In</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy:  #0D1B2E;
+  --navy2: #112240;
+  --navy3: #1A3358;
+  --blue:  #2563EB;
+  --blue2: #3B82F6;
+  --cyan:  #06B6D4;
+  --text:  #E8F0FB;
+  --muted: #6B87B8;
+  --edge:  rgba(255,255,255,0.07);
+  --font:  'Syne', system-ui, sans-serif;
+}
+html, body {
+  height: 100%;
+  font-family: var(--font);
+  background: var(--navy);
+  color: var(--text);
+}
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(37,99,235,0.032) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37,99,235,0.032) 1px, transparent 1px);
+  background-size: 58px 58px;
+}
+.wrap {
+  position: relative; z-index: 1;
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+}
+.card {
+  background: var(--navy2);
+  border: 1px solid var(--edge);
+  border-radius: 16px;
+  padding: 48px 44px;
+  width: 100%; max-width: 380px;
+  text-align: center;
+}
+.logo {
+  font-size: 22px; font-weight: 800; letter-spacing: -0.5px;
+  color: var(--text); margin-bottom: 8px;
+}
+.logo span { color: var(--cyan); }
+.tagline { font-size: 13px; color: var(--muted); margin-bottom: 36px; }
+.btn-signin {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%;
+  padding: 13px 20px;
+  background: var(--blue);
+  border: none; border-radius: 8px;
+  color: #fff; font-family: var(--font); font-size: 15px; font-weight: 600;
+  cursor: pointer; text-decoration: none;
+  transition: background 0.15s;
+}
+.btn-signin:hover { background: var(--blue2); }
+.btn-signin svg { flex-shrink: 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="logo">integrid<span>.</span></div>
+    <div class="tagline">Sales Workbook Platform</div>
+    <a id="signinBtn" class="btn-signin" href="/.auth/login/aad?post_login_redirect_uri=/">
+      <svg width="20" height="20" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+        <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+        <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+        <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+      </svg>
+      Sign in with Microsoft
+    </a>
+  </div>
+</div>
+<script>
+// If already authenticated, skip login page
+(async function () {
+  try {
+    const res  = await fetch("/.auth/me");
+    const json = await res.json();
+    if (json.clientPrincipal) {
+      const redirect = new URLSearchParams(window.location.search).get("redirect") || "/";
+      window.location.replace(redirect);
+    }
+  } catch { /* stay on login page */ }
+})();
+
+// Let ?redirect= param flow into the sign-in URL
+(function () {
+  const redirect = new URLSearchParams(window.location.search).get("redirect");
+  if (redirect) {
+    document.getElementById("signinBtn").href =
+      "/.auth/login/aad?post_login_redirect_uri=" + encodeURIComponent(redirect);
+  }
+})();
+</script>
+</body>
+</html>
