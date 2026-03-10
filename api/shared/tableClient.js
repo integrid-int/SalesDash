@@ -111,6 +111,12 @@ async function listEntries(userId, limit = 20) {
   return results;
 }
 
+// ── Delete a single entry ─────────────────────────────────────────────────────
+async function deleteEntry(userId, workbook, isoWeek) {
+  const client = getClient(ENTRIES_TABLE);
+  await client.deleteEntity(userId, `${workbook}_${isoWeek}`);
+}
+
 // ── Get / upsert user meta ────────────────────────────────────────────────────
 async function getMeta(userId) {
   const client = getClient(META_TABLE);
@@ -137,6 +143,7 @@ module.exports = {
   upsertEntry,
   loadEntry,
   listEntries,
+  deleteEntry,
   getMeta,
   upsertMeta,
   ENTRIES_TABLE,

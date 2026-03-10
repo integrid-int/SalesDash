@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Integrid — Entry Manager</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:   #0D1B2E;
+  --navy2:  #112240;
+  --navy3:  #1A3358;
+  --blue:   #2563EB;
+  --blue2:  #3B82F6;
+  --cyan:   #06B6D4;
+  --gold:   #F59E0B;
+  --green:  #10B981;
+  --red:    #EF4444;
+  --purple: #7C3AED;
+  --text:   #E8F0FB;
+  --muted:  #6B87B8;
+  --dim:    rgba(255,255,255,0.05);
+  --edge:   rgba(255,255,255,0.07);
+  --font:   'Syne', system-ui, sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--navy); color: var(--text); min-height: 100vh; }
+
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(37,99,235,0.032) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37,99,235,0.032) 1px, transparent 1px);
+  background-size: 58px 58px;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: 62px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 44px;
+  background: rgba(13,27,46,0.9); backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--edge);
+}
+.nav-left { display: flex; align-items: center; gap: 12px; }
+.nav-mark {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--blue), var(--cyan));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800; color: white;
+}
+.nav-name { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+.nav-name span { color: var(--text); }
+.nav-back {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--muted); text-decoration: none;
+  background: var(--dim); border: 1px solid var(--edge);
+  padding: 5px 11px; border-radius: 6px;
+  display: flex; align-items: center; gap: 6px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.nav-back:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
+
+/* ── PAGE ── */
+.page {
+  position: relative; z-index: 1;
+  max-width: 1000px; margin: 0 auto;
+  padding: 88px 44px 80px;
+}
+
+/* ── PAGE HEADER ── */
+.page-head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-bottom: 28px; padding-bottom: 18px; border-bottom: 1px solid var(--edge);
+}
+.page-eyebrow { font-size: 9px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.page-title { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
+.page-count { font-size: 11px; color: var(--muted); }
+
+/* ── FILTER TABS ── */
+.filter-bar { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+.filter-tabs { display: flex; gap: 6px; }
+.filter-tab {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 5px 12px; border-radius: 6px; cursor: pointer;
+  background: var(--dim); border: 1px solid var(--edge); color: var(--muted);
+  transition: background .15s, color .15s, border-color .15s;
+}
+.filter-tab.active { background: rgba(37,99,235,.2); color: var(--blue2); border-color: rgba(37,99,235,.3); }
+.filter-note { font-size: 10px; color: var(--muted); }
+
+/* ── ENTRY LIST ── */
+.entry-list {
+  background: var(--navy2); border: 1px solid var(--edge);
+  border-radius: 14px; overflow: hidden;
+}
+.entry-list-header {
+  display: grid; grid-template-columns: 36px 110px 1fr 140px 110px 90px;
+  padding: 9px 18px;
+  background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--edge);
+}
+.entry-list-header div {
+  font-size: 8px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted);
+}
+
+.entry-row {
+  display: grid; grid-template-columns: 36px 110px 1fr 140px 110px 90px;
+  align-items: center; padding: 0 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: background 0.12s;
+  min-height: 52px;
+}
+.entry-row:last-child { border-bottom: none; }
+.entry-row:hover { background: rgba(255,255,255,0.025); }
+.entry-row.confirming { background: rgba(239,68,68,0.06); border-color: rgba(239,68,68,0.15); }
+.entry-row.deleting  { opacity: 0.4; pointer-events: none; }
+
+.entry-icon {
+  width: 28px; height: 28px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; flex-shrink: 0;
+}
+.ei-audit  { background: rgba(245,158,11,.14); border: 1px solid rgba(245,158,11,.2); }
+.ei-growth { background: rgba(37,99,235,.14);  border: 1px solid rgba(37,99,235,.2); }
+.ei-daily  { background: rgba(245,158,11,.14); border: 1px solid rgba(245,158,11,.2); }
+.ei-push   { background: rgba(16,185,129,.14); border: 1px solid rgba(16,185,129,.2); }
+
+.entry-type { font-size: 11px; font-weight: 700; color: var(--muted); }
+.entry-week { font-size: 13px; font-weight: 700; }
+.entry-summary { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.entry-saved { font-size: 10px; color: var(--muted); }
+
+/* Delete button */
+.btn-delete {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--muted); background: var(--dim); border: 1px solid var(--edge);
+  padding: 4px 10px; border-radius: 6px; cursor: pointer; font-family: var(--font);
+  transition: color .14s, background .14s, border-color .14s;
+  white-space: nowrap;
+}
+.btn-delete:hover { color: #FCA5A5; background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.25); }
+
+/* Confirm inline */
+.confirm-actions { display: flex; gap: 6px; align-items: center; }
+.btn-confirm-yes {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: #FCA5A5; background: rgba(239,68,68,.18); border: 1px solid rgba(239,68,68,.35);
+  padding: 4px 10px; border-radius: 6px; cursor: pointer; font-family: var(--font);
+  transition: background .14s;
+}
+.btn-confirm-yes:hover { background: rgba(239,68,68,.32); }
+.btn-confirm-no {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--muted); background: var(--dim); border: 1px solid var(--edge);
+  padding: 4px 10px; border-radius: 6px; cursor: pointer; font-family: var(--font);
+}
+
+/* Empty / loading states */
+.list-empty {
+  padding: 40px 18px; text-align: center;
+  font-size: 12px; color: var(--muted);
+}
+.list-loading {
+  padding: 40px 18px; text-align: center;
+  font-size: 12px; color: var(--muted);
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.spinner {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid var(--edge); border-top-color: var(--blue2);
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: var(--navy2); border: 1px solid var(--edge); border-radius: 10px;
+  padding: 10px 20px; font-size: 12px; font-weight: 600; color: var(--text);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 300;
+  transition: transform .25s ease, opacity .25s ease; opacity: 0;
+}
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+.toast.error { border-color: rgba(239,68,68,.4); color: #FCA5A5; }
+.toast.success { border-color: rgba(16,185,129,.4); color: #6EE7B7; }
+
+@media (max-width:768px) {
+  .page { padding: 80px 18px 60px; }
+  nav { padding: 0 18px; }
+  .entry-list-header { display: none; }
+  .entry-row { grid-template-columns: 36px 1fr auto; gap: 10px; padding: 12px 14px; }
+  .entry-row > .entry-type { display: none; }
+  .entry-row > .entry-saved { display: none; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-left">
+    <div class="nav-mark">IG</div>
+    <div class="nav-name"><span>Integrid</span> / Entry Manager</div>
+  </div>
+  <a href="/" class="nav-back">← Dashboard</a>
+</nav>
+
+<div class="page">
+  <div class="page-head">
+    <div>
+      <div class="page-eyebrow">Admin</div>
+      <div class="page-title">Entry Manager</div>
+    </div>
+    <div class="page-count" id="pageCount">Loading…</div>
+  </div>
+
+  <div class="filter-bar">
+    <div class="filter-tabs">
+      <div class="filter-tab active" onclick="setFilter('all',this)">All</div>
+      <div class="filter-tab" onclick="setFilter('audit',this)">Time Audit</div>
+      <div class="filter-tab" onclick="setFilter('growth',this)">Growth</div>
+      <div class="filter-tab" onclick="setFilter('daily',this)">Daily Plan</div>
+      <div class="filter-tab" onclick="setFilter('push',this)">12-Week Push</div>
+    </div>
+    <div class="filter-note">Deletions are permanent and cannot be undone.</div>
+  </div>
+
+  <div class="entry-list" id="entryList">
+    <div class="entry-list-header">
+      <div></div>
+      <div>Workbook</div>
+      <div>Week / Summary</div>
+      <div>Saved</div>
+      <div></div>
+      <div>Action</div>
+    </div>
+    <div class="list-loading" id="loadingState">
+      <div class="spinner"></div>Loading entries…
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────────
+let allEntries = [];
+let currentFilter = "all";
+
+// ── Boot ───────────────────────────────────────────────────────────────────────
+window.addEventListener("load", loadEntries);
+
+async function loadEntries() {
+  setLoading(true);
+  try {
+    const res = await fetch("/api/history?limit=200");
+    if (res.status === 401) { window.location.href = "/login"; return; }
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    allEntries = data.entries || [];
+    renderList();
+  } catch (err) {
+    document.getElementById("loadingState").innerHTML =
+      '<span style="color:var(--red)">Failed to load entries. <a href="" style="color:var(--blue2)">Retry</a></span>';
+  }
+  setLoading(false);
+}
+
+// ── Filter ─────────────────────────────────────────────────────────────────────
+function setFilter(filter, el) {
+  currentFilter = filter;
+  document.querySelectorAll(".filter-tab").forEach(t => t.classList.remove("active"));
+  el.classList.add("active");
+  renderList();
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────────
+function renderList() {
+  const filtered = currentFilter === "all"
+    ? allEntries
+    : allEntries.filter(e => e.workbook === currentFilter);
+
+  const count = filtered.length;
+  document.getElementById("pageCount").textContent =
+    count === 0 ? "No entries" : count === 1 ? "1 entry" : `${count} entries`;
+
+  const list = document.getElementById("entryList");
+
+  if (count === 0) {
+    list.innerHTML = '<div class="list-empty">No entries found.</div>';
+    return;
+  }
+
+  const header = `<div class="entry-list-header">
+    <div></div><div>Workbook</div><div>Week / Summary</div>
+    <div>Saved</div><div></div><div>Action</div>
+  </div>`;
+
+  const rows = filtered.map(e => entryRowHTML(e)).join("");
+  list.innerHTML = header + rows;
+}
+
+function entryRowHTML(e, confirming = false) {
+  const meta = workbookMeta(e.workbook);
+  const saved = formatDate(e.savedAt);
+  const id    = rowId(e);
+
+  const actionCell = confirming
+    ? `<div class="confirm-actions">
+        <button class="btn-confirm-yes" onclick="confirmDelete('${e.workbook}','${e.isoWeek}')">Delete</button>
+        <button class="btn-confirm-no"  onclick="cancelDelete('${e.workbook}','${e.isoWeek}')">Cancel</button>
+       </div>`
+    : `<button class="btn-delete" onclick="promptDelete('${e.workbook}','${e.isoWeek}')">Delete</button>`;
+
+  return `<div class="entry-row${confirming ? " confirming" : ""}" id="${id}">
+    <div><div class="entry-icon ${meta.cls}">${meta.icon}</div></div>
+    <div class="entry-type">${meta.label}</div>
+    <div>
+      <div class="entry-week">${meta.label} · ${e.isoWeek}</div>
+      <div class="entry-summary">${e.summary || ""}</div>
+    </div>
+    <div class="entry-saved">${saved}</div>
+    <div></div>
+    <div>${actionCell}</div>
+  </div>`;
+}
+
+// ── Delete flow ────────────────────────────────────────────────────────────────
+function promptDelete(workbook, isoWeek) {
+  const id  = rowId({ workbook, isoWeek });
+  const row = document.getElementById(id);
+  if (!row) return;
+  const entry = allEntries.find(e => e.workbook === workbook && e.isoWeek === isoWeek);
+  if (!entry) return;
+  row.outerHTML = entryRowHTML(entry, true);
+}
+
+function cancelDelete(workbook, isoWeek) {
+  const id  = rowId({ workbook, isoWeek });
+  const row = document.getElementById(id);
+  if (!row) return;
+  const entry = allEntries.find(e => e.workbook === workbook && e.isoWeek === isoWeek);
+  if (!entry) return;
+  row.outerHTML = entryRowHTML(entry, false);
+}
+
+async function confirmDelete(workbook, isoWeek) {
+  const id  = rowId({ workbook, isoWeek });
+  const row = document.getElementById(id);
+  if (row) row.classList.add("deleting");
+
+  try {
+    const res = await fetch("/api/delete", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ workbook, isoWeek }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || "HTTP " + res.status);
+    }
+
+    // Remove from local state and DOM
+    allEntries = allEntries.filter(e => !(e.workbook === workbook && e.isoWeek === isoWeek));
+    if (row) row.remove();
+
+    // Update count
+    const filtered = currentFilter === "all" ? allEntries : allEntries.filter(e => e.workbook === currentFilter);
+    const count = filtered.length;
+    document.getElementById("pageCount").textContent =
+      count === 0 ? "No entries" : count === 1 ? "1 entry" : `${count} entries`;
+
+    if (count === 0) {
+      document.getElementById("entryList").innerHTML = '<div class="list-empty">No entries found.</div>';
+    }
+
+    showToast("Entry deleted.", "success");
+  } catch (err) {
+    if (row) { row.classList.remove("deleting"); }
+    const entry = allEntries.find(e => e.workbook === workbook && e.isoWeek === isoWeek);
+    if (entry && row) row.outerHTML = entryRowHTML(entry, false);
+    showToast("Delete failed: " + err.message, "error");
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function rowId(e) {
+  return "row-" + e.workbook + "-" + (e.isoWeek || "").replace(/[^a-z0-9]/gi, "-");
+}
+
+function workbookMeta(wb) {
+  const map = {
+    audit:  { icon: "⏱", label: "Time Audit",    cls: "ei-audit"  },
+    growth: { icon: "📈", label: "Weekly Growth", cls: "ei-growth" },
+    daily:  { icon: "📋", label: "Daily Plan",    cls: "ei-daily"  },
+    push:   { icon: "🎯", label: "12-Week Push",  cls: "ei-push"   },
+  };
+  return map[wb] || { icon: "📄", label: wb, cls: "" };
+}
+
+function formatDate(iso) {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleString("en-US", {
+      month: "short", day: "numeric", year: "numeric",
+      hour: "numeric", minute: "2-digit",
+    });
+  } catch { return iso; }
+}
+
+function setLoading(on) {
+  const el = document.getElementById("loadingState");
+  if (el) el.style.display = on ? "flex" : "none";
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className   = "toast " + (type || "");
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 3200);
+}
+</script>
+</body>
+</html>
