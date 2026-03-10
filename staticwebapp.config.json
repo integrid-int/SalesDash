@@ -12,11 +12,6 @@
   },
   "routes": [
     {
-      "route": "/login",
-      "redirect": "/.auth/login/aad",
-      "statusCode": 302
-    },
-    {
       "route": "/.auth/logout",
       "redirect": "/",
       "statusCode": 302
@@ -28,18 +23,8 @@
     {
       "route": "/api/*",
       "allowedRoles": ["authenticated"]
-    },
-    {
-      "route": "/*",
-      "allowedRoles": ["authenticated"]
     }
   ],
-  "responseOverrides": {
-    "401": {
-      "redirect": "/.auth/login/aad",
-      "statusCode": 302
-    }
-  },
   "globalHeaders": {
     "Cache-Control": "no-store",
     "X-Content-Type-Options": "nosniff",

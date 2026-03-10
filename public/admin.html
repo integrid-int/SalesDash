@@ -251,13 +251,21 @@ let allEntries = [];
 let currentFilter = "all";
 
 // ── Boot ───────────────────────────────────────────────────────────────────────
-window.addEventListener("load", loadEntries);
+window.addEventListener("load", async function() {
+  // Auth guard — redirect to AAD login if not authenticated
+  try {
+    const me = await fetch("/.auth/me");
+    const { clientPrincipal } = await me.json();
+    if (!clientPrincipal) { window.location.href = "/.auth/login/aad"; return; }
+  } catch { /* offline / local dev — proceed */ }
+  loadEntries();
+});
 
 async function loadEntries() {
   setLoading(true);
   try {
     const res = await fetch("/api/history?limit=200");
-    if (res.status === 401) { window.location.href = "/login"; return; }
+    if (res.status === 401) { window.location.href = "/.auth/login/aad"; return; }
     if (!res.ok) throw new Error("HTTP " + res.status);
     const data = await res.json();
     allEntries = data.entries || [];
