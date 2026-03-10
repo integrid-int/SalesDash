@@ -736,17 +736,17 @@ footer {
 </div>
 
 <script>
-// ── AUTH GUARD + USER INFO ────────────────────────────────────────────────────
+// ── USER INFO ─────────────────────────────────────────────────────────────────
 async function loadUser() {
   try {
     const res  = await fetch("/.auth/me");
     const json = await res.json();
     const user = json.clientPrincipal || null;
-    if (!user) { window.location.href = "/.auth/login/aad"; return; }
+    if (!user) return;
     const name = user.userDetails || "User";
     document.getElementById("navUserName").textContent = name.split("@")[0];
     document.getElementById("navAvatar").textContent   = name[0].toUpperCase();
-  } catch { /* silent — API may not be available locally */ }
+  } catch { /* silent */ }
 }
 
 // ── ISO WEEK LABEL ────────────────────────────────────────────────────────────

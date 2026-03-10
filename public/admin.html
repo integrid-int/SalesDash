@@ -251,15 +251,7 @@ let allEntries = [];
 let currentFilter = "all";
 
 // ── Boot ───────────────────────────────────────────────────────────────────────
-window.addEventListener("load", async function() {
-  // Auth guard — redirect to AAD login if not authenticated
-  try {
-    const me = await fetch("/.auth/me");
-    const { clientPrincipal } = await me.json();
-    if (!clientPrincipal) { window.location.href = "/.auth/login/aad"; return; }
-  } catch { /* offline / local dev — proceed */ }
-  loadEntries();
-});
+window.addEventListener("load", loadEntries);
 
 async function loadEntries() {
   setLoading(true);
