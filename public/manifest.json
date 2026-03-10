@@ -1,0 +1,24 @@
+{
+  "name": "Integrid Sales Workbook",
+  "short_name": "Integrid",
+  "description": "Weekly sales workbooks and activity tracking for Integrid.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D1B2E",
+  "theme_color": "#0D1B2E",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
