@@ -21,14 +21,14 @@
         "uksouth"
       ],
       "metadata": {
-        "description": "Azure region."
+        "description": "Azure region. Must support Azure Static Web Apps."
       }
     },
     "githubRepoUrl": {
       "type": "string",
       "defaultValue": "https://github.com/integrid-int/SalesDash",
       "metadata": {
-        "description": "GitHub repository URL."
+        "description": "GitHub repository URL (https://github.com/org/repo)."
       }
     },
     "githubBranch": {
@@ -39,21 +39,7 @@
       "type": "securestring",
       "defaultValue": "",
       "metadata": {
-        "description": "GitHub PAT. Leave blank for public repos."
-      }
-    },
-    "entraClientId": {
-      "type": "string",
-      "defaultValue": "",
-      "metadata": {
-        "description": "Leave blank - run Register-EntraApp.ps1 post-deploy."
-      }
-    },
-    "entraClientSecret": {
-      "type": "securestring",
-      "defaultValue": "",
-      "metadata": {
-        "description": "Leave blank - run Register-EntraApp.ps1 post-deploy."
+        "description": "GitHub Personal Access Token with repo scope. Required to link the SWA to GitHub."
       }
     }
   },
@@ -67,18 +53,14 @@
       "apiVersion": "2023-01-01",
       "name": "[variables('storageAccountName')]",
       "location": "[parameters('location')]",
-      "sku": {
-        "name": "Standard_LRS"
-      },
+      "sku": { "name": "Standard_LRS" },
       "kind": "StorageV2",
       "properties": {
         "supportsHttpsTrafficOnly": true,
         "minimumTlsVersion": "TLS1_2",
         "allowBlobPublicAccess": false
       },
-      "tags": {
-        "app": "[parameters('appName')]"
-      }
+      "tags": { "app": "[parameters('appName')]" }
     },
     {
       "type": "Microsoft.Storage/storageAccounts/tableServices/tables",
@@ -101,10 +83,7 @@
       "apiVersion": "2023-01-01",
       "name": "[variables('staticWebAppName')]",
       "location": "[parameters('location')]",
-      "sku": {
-        "name": "Free",
-        "tier": "Free"
-      },
+      "sku": { "name": "Free", "tier": "Free" },
       "properties": {
         "repositoryUrl": "[parameters('githubRepoUrl')]",
         "branch": "[parameters('githubBranch')]",
@@ -115,9 +94,7 @@
           "outputLocation": ""
         }
       },
-      "tags": {
-        "app": "[parameters('appName')]"
-      }
+      "tags": { "app": "[parameters('appName')]" }
     },
     {
       "type": "Microsoft.Web/staticSites/config",
@@ -128,18 +105,16 @@
         "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
       ],
       "properties": {
-        "STORAGE_CONNECTION_STRING": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts',variables('storageAccountName')),'2023-01-01').keys[0].value,';EndpointSuffix=core.windows.net')]",
-        "AAD_CLIENT_ID": "[parameters('entraClientId')]",
-        "AAD_CLIENT_SECRET": "[parameters('entraClientSecret')]"
+        "STORAGE_CONNECTION_STRING": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts',variables('storageAccountName')),'2023-01-01').keys[0].value,';EndpointSuffix=core.windows.net')]"
       }
     }
   ],
   "outputs": {
-    "staticWebAppUrl": {
+    "swaUrl": {
       "type": "string",
       "value": "[concat('https://',reference(resourceId('Microsoft.Web/staticSites',variables('staticWebAppName'))).defaultHostname)]"
     },
-    "staticWebAppName": {
+    "swaName": {
       "type": "string",
       "value": "[variables('staticWebAppName')]"
     },
@@ -147,9 +122,9 @@
       "type": "string",
       "value": "[variables('storageAccountName')]"
     },
-    "postDeployCommand": {
+    "nextStep": {
       "type": "string",
-      "value": "[concat('pwsh ./deploy/Register-EntraApp.ps1 -SwaName ',variables('staticWebAppName'),' -ResourceGroup ',resourceGroup().name)]"
+      "value": "[concat('Run: pwsh deploy/Deploy-All.ps1 -ResourceGroup ',resourceGroup().name,' -SwaName ',variables('staticWebAppName'),' -SetGithubSecret')]"
     }
   }
 }

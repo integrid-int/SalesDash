@@ -1,194 +1,319 @@
 # Integrid Sales Workbook
 
-Azure Static Web App with Entra ID auth, Azure Table Storage, and four Azure Functions.
+Azure Static Web App — weekly sales workbooks with a live dashboard, autosave, history, and admin tools. Secured with Microsoft Entra ID (Azure AD). Installable as a PWA on iOS.
 
 ---
 
 ## Architecture
 
 ```
-Browser
+Browser (PWA-capable)
   └─ Azure Static Web App  (public/)
-       ├─ index.html          — lander + live dashboard
-       ├─ integrid_time_audit.html
-       ├─ integrid_weekly_growth.html
-       └─ workbook-storage.js — client autosave module
+       ├─ index.html                  — dashboard, workbook launcher, history
+       ├─ integrid_time_audit.html    — Time Audit & RGA workbook
+       ├─ integrid_weekly_growth.html — Weekly Growth workbook (3-page)
+       ├─ integrid_daily_plan.html    — Daily Plan workbook (Mon–Fri)
+       ├─ integrid_12week_push.html   — 12-Week Push workbook
+       ├─ admin.html                  — entry manager (view + delete)
+       ├─ login.html                  — sign-in landing page
+       ├─ workbook-storage.js         — autosave module (debounced, ?week= support)
+       ├─ manifest.json               — PWA manifest
+       └─ sw.js                       — service worker (app shell cache)
 
-  └─ Azure Functions  (api/)
-       ├─ POST /api/save       — upsert workbook entry
-       ├─ GET  /api/load       — load entry for a week
-       ├─ GET  /api/dashboard  — aggregated dashboard stats
-       └─ GET  /api/history    — last N entries (sparklines)
+  └─ Azure Functions  (api/)   — Node 20, managed by SWA
+       ├─ POST /api/save       — upsert workbook entry + recalculate streak
+       ├─ GET  /api/load       — load entry for a specific week
+       ├─ GET  /api/dashboard  — aggregated stats for all workbooks
+       ├─ GET  /api/history    — last N entries across all workbooks
+       ├─ POST /api/delete     — delete a specific entry (admin)
+       └─ GET  /api/ping       — health check (anonymous)
 
   └─ Azure Table Storage
-       ├─ workbookEntries      — one row per user × workbook × week
-       └─ workbookMeta         — streak, lastSeen, totalEntries
+       ├─ workbookEntries      — one row per user × workbook × ISO week
+       └─ workbookMeta         — streak, lastSeen, totalEntries per user
 ```
 
-All `/api/*` routes and all pages require Entra ID (Microsoft) authentication,
-enforced by Azure Static Web Apps before the request reaches your functions.
+**Auth:** Microsoft Entra ID via SWA's built-in managed identity provider.
+`/api/*` routes require authentication at the routing level. Pages use a JS guard
+(`/.auth/me`) that redirects unauthenticated users to `/login.html`.
 
 ---
 
-## One-time Setup (≈ 30 minutes)
+## Quick Start — Automated (≈ 15 min)
 
-### 1. Create Azure Resources
+### Prerequisites
 
-```bash
-# Resource group
-az group create --name rg-integrid-workbook --location eastus
+| Tool | Install |
+|------|---------|
+| PowerShell 7+ | `winget install Microsoft.PowerShell` |
+| Az PowerShell module | `Install-Module Az -Scope CurrentUser` |
+| GitHub CLI *(optional, for auto-setting secret)* | `winget install GitHub.cli` |
+| Git | `winget install Git.Git` |
 
-# Storage account (LRS = cheapest, ~$0.07/GB/month)
-az storage account create \
-  --name stintegridwb \
-  --resource-group rg-integrid-workbook \
-  --sku Standard_LRS \
-  --kind StorageV2
+### 1. Clone the repo
 
-# Get the connection string — you'll need this in step 4
-az storage account show-connection-string \
-  --name stintegridwb \
-  --resource-group rg-integrid-workbook \
-  --query connectionString -o tsv
+```powershell
+git clone https://github.com/integrid-int/SalesDash.git
+cd SalesDash
 ```
 
-### 2. Register an Entra ID App
+### 2. Run the deployment script
 
-1. Go to **Azure Portal → Entra ID → App registrations → New registration**
-2. Name: `Integrid Workbook`
-3. Supported account types: **Accounts in this organizational directory only**
-4. Redirect URI: leave blank for now (you'll add it after SWA is created)
-5. Click **Register**
-6. Note the **Application (client) ID**
-7. Go to **Certificates & secrets → New client secret** — copy the value immediately
-
-### 3. Create the Static Web App
-
-**Option A — Azure Portal (easiest)**
-1. Portal → Create a resource → Static Web App
-2. Connect your GitHub repo
-3. Build preset: **Custom**
-4. App location: `public`
-5. Api location: `api`
-6. Output location: (leave blank)
-7. Click **Review + create**
-
-**Option B — CLI**
-```bash
-az staticwebapp create \
-  --name swa-integrid-workbook \
-  --resource-group rg-integrid-workbook \
-  --source https://github.com/YOUR_ORG/YOUR_REPO \
-  --branch main \
-  --app-location public \
-  --api-location api \
-  --login-with-github
+```powershell
+pwsh deploy/Deploy-All.ps1 `
+    -ResourceGroup  rg-integrid-salesdash `
+    -AppName        integrid-workbook `
+    -GithubRepo     https://github.com/integrid-int/SalesDash `
+    -GithubPat      ghp_xxxx `
+    -SetGithubSecret
 ```
 
-### 4. Add App Settings
+The script will:
+- Create the resource group (if needed)
+- Deploy [azuredeploy.json](azuredeploy.json) — storage account, both Azure Tables, and the Static Web App
+- Wire `STORAGE_CONNECTION_STRING` into SWA app settings automatically
+- Retrieve the SWA deployment token
+- Set `AZURE_STATIC_WEB_APPS_API_TOKEN` in GitHub Actions secrets (if `gh` CLI is present)
 
-In **Portal → Your SWA → Configuration → Application settings**, add:
+> **GitHub PAT scopes required:** `repo` (to link SWA to GitHub and set secrets)
 
-| Name | Value |
-|------|-------|
-| `STORAGE_CONNECTION_STRING` | (connection string from step 1) |
-| `AAD_CLIENT_ID` | (client ID from step 2) |
-| `AAD_CLIENT_SECRET` | (client secret from step 2) |
+### 3. Enable Entra ID authentication
 
-### 5. Update Entra App Redirect URI
+This is a one-time manual step in the Azure Portal:
 
-Once the SWA is deployed, go back to your Entra app registration:
-- **Authentication → Add a platform → Web**
-- Redirect URI: `https://YOUR-SWA-HOSTNAME.azurestaticapps.net/.auth/login/aad/callback`
-- Also add your custom domain if you have one.
+1. Portal → **your SWA** → **Authentication**
+2. Click **Add identity provider**
+3. Choose **Microsoft**
+4. Leave defaults — Azure creates and registers the Entra app automatically
+5. Set **Restrict access** → **Require authentication**
+6. Click **Add**
 
-### 6. Add GitHub Secret
-
-In your GitHub repo → **Settings → Secrets → Actions**, add:
-- `AZURE_STATIC_WEB_APPS_API_TOKEN`
-- Value: get this from Portal → Your SWA → Manage deployment token
-
-### 7. Push and Deploy
+### 4. Deploy the app
 
 ```bash
-git add .
-git commit -m "Initial deployment"
 git push origin main
 ```
 
-GitHub Actions runs automatically. Deployment takes ~2 minutes.
+GitHub Actions deploys in ~2 minutes. Visit the URL printed by the script.
+
+---
+
+## Manual Setup (alternative to the script)
+
+<details>
+<summary>Expand manual steps</summary>
+
+### 1. Create a resource group and storage account
+
+```powershell
+Connect-AzAccount
+New-AzResourceGroup -Name rg-integrid-salesdash -Location eastus2
+
+New-AzStorageAccount `
+    -ResourceGroupName rg-integrid-salesdash `
+    -Name              integridworkbookstor `
+    -Location          eastus2 `
+    -SkuName           Standard_LRS `
+    -Kind              StorageV2
+
+# Get the connection string
+(Get-AzStorageAccountKey -ResourceGroupName rg-integrid-salesdash `
+    -Name integridworkbookstor)[0].Value
+```
+
+### 2. Create the Static Web App (Portal)
+
+1. Portal → **Create a resource** → **Static Web App**
+2. Connect your GitHub repo
+3. Build preset: **Custom**
+4. App location: `public` · API location: `api` · Output location: *(blank)*
+5. Click **Review + create**
+
+### 3. Add the app setting
+
+Portal → SWA → **Configuration** → **Application settings**:
+
+| Name | Value |
+|------|-------|
+| `STORAGE_CONNECTION_STRING` | *(connection string from step 1)* |
+
+### 4. Enable Entra ID authentication
+
+Same as step 3 in the automated path above.
+
+### 5. Add the GitHub Actions secret
+
+Portal → SWA → **Manage deployment token** → copy value.
+GitHub repo → **Settings → Secrets → Actions** → New secret:
+- Name: `AZURE_STATIC_WEB_APPS_API_TOKEN`
+- Value: *(token from above)*
+
+</details>
 
 ---
 
 ## Local Development
 
-```bash
-# Install Azure Functions Core Tools
+```powershell
+# Install tooling (once)
 npm install -g azure-functions-core-tools@4
-
-# Install SWA CLI (proxies auth + API locally)
 npm install -g @azure/static-web-apps-cli
 
-# Copy and fill in local settings
+# Configure local settings
 cp api/local.settings.json.example api/local.settings.json
-# Edit api/local.settings.json with your real Storage connection string
+# Edit api/local.settings.json — fill in your real STORAGE_CONNECTION_STRING
 
-# Run everything together
+# Start everything
 swa start public --api-location api
+# → http://localhost:4280  (auth is simulated by SWA CLI)
 ```
-
-The SWA CLI starts a proxy at `http://localhost:4280` that handles auth simulation
-and routes `/api/*` calls to your local Functions runtime.
 
 ---
 
-## Cost Estimate (your usage level)
+## Maintenance Scripts
 
-| Resource | Tier | Cost |
-|----------|------|------|
-| Azure Static Web Apps | Free | $0/month |
-| Azure Functions (API) | Included in SWA Free | $0/month |
-| Azure Table Storage | LRS, < 1 GB | ~$0.05/month |
-| **Total** | | **~$0.05/month** |
+### Rotate storage account key
+
+```powershell
+pwsh deploy/Set-AppSettings.ps1 `
+    -ResourceGroup      rg-integrid-salesdash `
+    -SwaName            integrid-workbook-swa `
+    -StorageAccountName integridworkbookstor
+```
+
+### Add or update an app setting
+
+```powershell
+pwsh deploy/Set-AppSettings.ps1 `
+    -ResourceGroup  rg-integrid-salesdash `
+    -SwaName        integrid-workbook-swa `
+    -ExtraSettings  @{ MY_SETTING = "value" }
+```
+
+---
+
+## App Settings Reference
+
+| Setting | Where set | Description |
+|---------|-----------|-------------|
+| `STORAGE_CONNECTION_STRING` | ARM template / script | Azure Table Storage connection string |
+
+> `FUNCTIONS_WORKER_RUNTIME` and `AzureWebJobsStorage` are reserved by SWA and cannot be set manually.
+
+---
+
+## Routing & Auth
+
+`public/staticwebapp.config.json` controls routing:
+
+| Route | Rule |
+|-------|------|
+| `/api/ping` | Anonymous (health check) |
+| `/api/*` | Requires `authenticated` role |
+| `/.auth/logout` | Redirects to `/` |
+| All pages | JS guard — redirects unauthenticated users to `/login.html` |
+
+After Entra login, users land on `/` (the dashboard). The sign-in page is `/login.html`.
 
 ---
 
 ## Data Model
 
-### workbookEntries table
+### `workbookEntries` table
 
 | Column | Type | Example |
 |--------|------|---------|
 | PartitionKey | string | `"abc123-oid-from-entra"` |
 | RowKey | string | `"audit_2026-W09"` |
-| workbook | string | `"audit"` or `"growth"` |
+| workbook | string | `"audit"` · `"growth"` · `"daily"` · `"push"` |
 | isoWeek | string | `"2026-W09"` |
 | savedAt | ISO string | `"2026-03-02T14:30:00.000Z"` |
-| data | JSON string | `{"lastH":{"rga":4,...},...}` |
+| data | JSON string | workbook-specific fields object |
+| summary | string | human-readable summary (filled by API) |
 
-### workbookMeta table
+### `workbookMeta` table
 
 | Column | Type | Description |
 |--------|------|-------------|
 | PartitionKey | string | userId (Entra OID) |
 | RowKey | string | `"meta"` |
-| streakWeeks | number | Consecutive weeks with any entry |
+| streakWeeks | number | Consecutive weeks with any save |
 | totalEntries | number | All-time entry count |
 | lastSeen | ISO string | Last save timestamp |
+| lastWeek | string | ISO week of last save |
+
+---
+
+## API Reference
+
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| `POST` | `/api/save` | Required | Upsert a workbook entry. Body: `{ workbook, isoWeek?, data }` |
+| `GET` | `/api/load` | Required | Load entry. Query: `?workbook=&week=` |
+| `GET` | `/api/dashboard` | Required | Aggregated stats for all workbooks |
+| `GET` | `/api/history` | Required | Recent entries. Query: `?workbook=&limit=` |
+| `POST` | `/api/delete` | Required | Delete entry. Body: `{ workbook, isoWeek }` |
+| `GET` | `/api/ping` | None | Health check. Returns `{ ok: true }` |
+
+**Valid workbook keys:** `audit` · `growth` · `daily` · `push`
 
 ---
 
 ## Adding a New Workbook
 
-1. Create `public/your-workbook.html` — include `<script src="workbook-storage.js"></script>`
-2. Call `WorkbookStorage.init("your-key", collectFn, populateFn)` at the bottom
-3. Add `"your-key"` to the allowlist in `api/save/index.js` and `api/load/index.js`
-4. Add a card to `public/index.html` and an entry in the `ROUTES` object
-5. Push — deploys automatically
+1. Create `public/your-workbook.html`
+   - Include `<script src="workbook-storage.js"></script>`
+   - Call `WorkbookStorage.init("your-key", collectFn, populateFn)` at the bottom
+2. Add `"your-key"` to the `VALID_WORKBOOKS` array in:
+   - `api/save/index.js`
+   - `api/load/index.js`
+   - `api/delete/index.js`
+3. Add a card to `public/index.html` in the workbook library section
+4. Add the HTML file to the `SHELL` array in `public/sw.js`
+5. Push — GitHub Actions deploys automatically
 
 ---
 
-## Custom Domain
+## iOS / PWA Installation
 
-Portal → Your SWA → Custom domains → Add → follow the CNAME/TXT DNS instructions.
-Takes ~5 minutes. TLS is provisioned automatically.
+The app is a Progressive Web App. To install on iOS:
+
+1. Open the site in **Safari** (must be Safari)
+2. Tap **Share** → **Add to Home Screen**
+3. The app launches full-screen with no browser chrome
+
+The service worker (`sw.js`) pre-caches the app shell so workbooks open
+instantly even on slow connections.
+
+---
+
+## Admin
+
+Navigate to `/admin.html` (link in the dashboard nav). Requires authentication.
+
+- View all saved entries across all users/workbooks
+- Filter by workbook type
+- Delete entries with inline confirmation
+
+---
+
+## Cost Estimate
+
+| Resource | Tier | Monthly cost |
+|----------|------|-------------|
+| Azure Static Web Apps | Free | $0 |
+| Azure Functions (bundled with SWA Free) | Included | $0 |
+| Azure Table Storage (< 1 GB, LRS) | Pay-as-you-go | ~$0.05 |
+| **Total** | | **~$0.05** |
+
+---
+
+## Troubleshooting
+
+| Symptom | Likely cause | Fix |
+|---------|-------------|-----|
+| All API calls return 500 | `platform.apiRuntime` missing | Ensure `"apiRuntime": "node:20"` in `staticwebapp.config.json` |
+| Auth redirect loops | Post-login redirect URL issue | Check JS guard in `index.html` — redirect should go to `/login.html` |
+| `/.auth/login/aad` returns 401 | SWA managed auth not configured | Portal → SWA → Authentication → Add Microsoft provider |
+| Storage errors | Connection string not set | Run `deploy/Set-AppSettings.ps1` or check Portal → Configuration |
+| `host.json` syntax error | Trailing comma in JSON | Validate `api/host.json` with a JSON linter |
